@@ -1,0 +1,5 @@
+.env
+api/.agents
+api/.claude
+api/.windsurf
+api/skills-lock.json    
