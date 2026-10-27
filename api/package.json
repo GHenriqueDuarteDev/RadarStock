@@ -4,8 +4,10 @@
     "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "@radarstock/contracts": "file:../contracts",
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
     "pg": "^8.23.1"
