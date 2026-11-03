@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ message: "Não autenticado" }, { status: 401 });
   }
 
-  const apiResponse = await fetch(`${process.env.API_URL}/user/me`, {
+  const apiResponse = await fetch(`${process.env.API_URL}/auth/me`, {
     headers: {
       "x-internal-secret": process.env.INTERNAL_SECRET ?? "",
       "x-user-id": session.userId,
