@@ -1,13 +1,20 @@
-import { Credentials } from "@radarstock/contracts";
+import { Credentials, UserInput } from "@radarstock/contracts";
 import { prisma } from "../src/db";
 import { hash, verify } from "@node-rs/argon2";
 
-async function register(body: Credentials) {
+async function register(body: UserInput) {
   const passwordHash = await hash(body.password);
 
   try {
     const user = await prisma.user.create({
-      data: { email: body.email, passwordHash },
+      data: {
+        email: body.email,
+        passwordHash,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        role: "viewer",
+        status: "active",
+      },
     });
 
     return {
@@ -32,7 +39,7 @@ async function login(body: Credentials) {
     where: { email: body.email },
   });
 
-  if (!user) {
+  if (!user || user.status === "inactive") {
     return { status: 401, data: { message: "E-mail ou senha invalidos" } };
   }
 
@@ -52,6 +59,7 @@ async function login(body: Credentials) {
 async function me(idUser: string) {
   const user = await prisma.user.findUnique({
     where: { id: idUser },
+    select: { id: true, email: true },
   });
 
   if (!user) {
@@ -65,7 +73,7 @@ async function me(idUser: string) {
   return { status: 200, data: { id: user.id, email: user.email } };
 }
 
-export const userService = {
+export const authService = {
   register,
   login,
   me,

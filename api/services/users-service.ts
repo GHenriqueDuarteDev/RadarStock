@@ -1,0 +1,159 @@
+import { hash } from "@node-rs/argon2";
+import type { UserInput, UserRole } from "@radarstock/contracts";
+import { prisma } from "../src/db";
+
+const publicUserSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+async function getAllUsers() {
+  const users = await prisma.user.findMany({
+    select: publicUserSelect,
+  });
+
+  return { status: 200, data: users };
+}
+
+async function getUserById(id: string) {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: publicUserSelect,
+  });
+
+  if (!user) {
+    return {
+      status: 404,
+      data: {
+        message: "Usuário não encontrado.",
+      },
+    };
+  }
+
+  return { status: 200, data: user };
+}
+
+async function updateUserById(id: string, input: Partial<UserInput>) {
+  const existing = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return {
+      status: 404,
+      data: {
+        message: "Usuário não encontrado.",
+      },
+    };
+  }
+
+  const data: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    passwordHash?: string;
+  } = {};
+
+  if (input.email !== undefined) {
+    data.email = input.email;
+  }
+  if (input.firstName !== undefined) {
+    data.firstName = input.firstName;
+  }
+  if (input.lastName !== undefined) {
+    data.lastName = input.lastName;
+  }
+  if (input.password !== undefined) {
+    data.passwordHash = await hash(input.password);
+  }
+
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data,
+      select: publicUserSelect,
+    });
+
+    return { status: 200, data: user };
+  } catch {
+    return {
+      status: 409,
+      data: {
+        message: "Este E-mail ja esta cadastrado.",
+      },
+    };
+  }
+}
+
+async function updateUserRole(id: string, role: UserRole) {
+  const existing = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return {
+      status: 404,
+      data: {
+        message: "Usuário não encontrado.",
+      },
+    };
+  }
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: { role },
+    select: publicUserSelect,
+  });
+
+  return { status: 200, data: user };
+}
+
+async function deleteUserById(id: string) {
+  const existing = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return {
+      status: 404,
+      data: {
+        message: "Usuário não encontrado.",
+      },
+    };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id },
+      data: {
+        status: "inactive",
+      },
+    });
+
+    return { status: 200, data: { message: "Usuário apagado com sucesso" } };
+  } catch {
+    return {
+      status: 409,
+      data: {
+        message: "Falha ao deletar usuário.",
+      },
+    };
+  }
+}
+
+export const userService = {
+  getAllUsers,
+  getUserById,
+  updateUserById,
+  updateUserRole,
+  deleteUserById,
+};
