@@ -1,18 +1,18 @@
-import { credentialsSchema } from "@radarstock/contracts";
-import { userService } from "../services";
+import { credentialsSchema, userInputSchema } from "@radarstock/contracts";
+import { authService } from "../services";
 import type { Request, Response } from "express";
 
 async function register(req: Request, res: Response) {
-  const parsed = credentialsSchema.safeParse(req.body);
+  const parsed = userInputSchema.safeParse(req.body);
 
   if (!parsed.success) {
     res.status(400).json({
-      message: "E-mail ou senha incorretos.",
+      message: "Dados de registro inválidos.",
     });
     return;
   }
 
-  const { status, data } = await userService.register(parsed.data);
+  const { status, data } = await authService.register(parsed.data);
   res.status(status).json(data);
 }
 
@@ -26,9 +26,10 @@ async function login(req: Request, res: Response) {
     return;
   }
 
-  const { status, data } = await userService.login(parsed.data);
+  const { status, data } = await authService.login(parsed.data);
   res.status(status).json(data);
 }
+
 async function me(req: Request, res: Response) {
   const idUser = res.locals.userId as string;
 
@@ -39,11 +40,11 @@ async function me(req: Request, res: Response) {
     return;
   }
 
-  const { status, data } = await userService.me(idUser);
+  const { status, data } = await authService.me(idUser);
   res.status(status).json(data);
 }
 
-export const userController = {
+export const authController = {
   register,
   login,
   me,
