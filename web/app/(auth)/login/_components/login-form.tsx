@@ -96,6 +96,7 @@ export function LoginForm() {
         <Field orientation="horizontal">
           <Button
             type="submit"
+            data-testid="button-login"
             disabled={form.formState.isSubmitting}
             className="w-full"
           >
