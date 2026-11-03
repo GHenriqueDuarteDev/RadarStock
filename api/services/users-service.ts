@@ -39,7 +39,27 @@ async function getUserById(id: string) {
   return { status: 200, data: user };
 }
 
-async function updateUserById(id: string, input: Partial<UserInput>) {
+async function updateUserById(
+  id: string,
+  input: Partial<UserInput>,
+  actorId: string,
+) {
+  if (actorId !== id) {
+    const actor = await prisma.user.findUnique({
+      where: { id: actorId },
+      select: { role: true, status: true },
+    });
+
+    if (!actor || actor.status !== "active" || actor.role !== "admin") {
+      return {
+        status: 403,
+        data: {
+          message: "Sem permissão.",
+        },
+      };
+    }
+  }
+
   const existing = await prisma.user.findUnique({
     where: { id },
     select: { id: true },

@@ -47,9 +47,12 @@ async function updateUserById(req: Request, res: Response) {
     return;
   }
 
+  const actorId = res.locals.userId as string;
+
   const { status, data } = await userService.updateUserById(
     idUser,
     parsed.data,
+    actorId,
   );
   res.status(status).json(data);
 }
