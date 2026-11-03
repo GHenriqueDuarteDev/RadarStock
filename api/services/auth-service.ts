@@ -40,7 +40,7 @@ async function login(body: Credentials) {
   });
 
   if (!user || user.status === "inactive") {
-    return { status: 401, data: { message: "E-mail ou senha invalidos" } };
+    return { status: 401, data: { message: "E-mail ou senha invalidos." } };
   }
 
   const passwordMatched = await verify(user.passwordHash, body.password);

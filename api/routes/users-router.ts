@@ -7,8 +7,18 @@ import {
 
 const userRouter = Router();
 
-userRouter.get("/", requireInternalUser, userController.getAllUsers);
-userRouter.get("/:id", requireInternalUser, userController.getUserById);
+userRouter.get(
+  "/",
+  requireInternalUser,
+  requireRoles("admin"),
+  userController.getAllUsers,
+);
+userRouter.get(
+  "/:id",
+  requireInternalUser,
+  requireRoles("admin"),
+  userController.getUserById,
+);
 userRouter.patch(
   "/:id/role",
   requireInternalUser,
@@ -16,6 +26,11 @@ userRouter.patch(
   userController.updateUserRole,
 );
 userRouter.patch("/:id", requireInternalUser, userController.updateUserById);
-userRouter.delete("/:id", requireInternalUser, userController.deleteUserById);
+userRouter.delete(
+  "/:id",
+  requireInternalUser,
+  requireRoles("admin"),
+  userController.deleteUserById,
+);
 
 export { userRouter };
