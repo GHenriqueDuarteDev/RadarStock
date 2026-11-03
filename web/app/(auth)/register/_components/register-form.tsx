@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 
 import { useState } from "react";
 
-import { Credentials, credentialsSchema } from "@radarstock/contracts";
+import { UserInput, userInputSchema } from "@radarstock/contracts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -21,15 +21,17 @@ export function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const router = useRouter();
 
-  const form = useForm<Credentials>({
-    resolver: zodResolver(credentialsSchema),
+  const form = useForm<UserInput>({
+    resolver: zodResolver(userInputSchema),
     defaultValues: {
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
     },
   });
 
-  async function onSubmit(data: Credentials) {
+  async function onSubmit(data: UserInput) {
     setServerError(null);
 
     try {
@@ -59,6 +61,38 @@ export function RegisterForm() {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       <FieldGroup>
+        <Field data-invalid={!!form.formState.errors.firstName}>
+          <FieldLabel htmlFor="firstName">Nome</FieldLabel>
+          <Input
+            id="firstName"
+            type="text"
+            autoComplete="given-name"
+            placeholder="João"
+            aria-invalid={!!form.formState.errors.firstName}
+            {...form.register("firstName")}
+          />
+
+          {form.formState.errors.firstName && (
+            <FieldError errors={[form.formState.errors.firstName]} />
+          )}
+        </Field>
+
+        <Field data-invalid={!!form.formState.errors.lastName}>
+          <FieldLabel htmlFor="lastName">Sobrenome</FieldLabel>
+          <Input
+            id="lastName"
+            type="text"
+            autoComplete="family-name"
+            placeholder="Silva"
+            aria-invalid={!!form.formState.errors.lastName}
+            {...form.register("lastName")}
+          />
+
+          {form.formState.errors.lastName && (
+            <FieldError errors={[form.formState.errors.lastName]} />
+          )}
+        </Field>
+
         <Field data-invalid={!!form.formState.errors.email}>
           <FieldLabel htmlFor="email">E-mail</FieldLabel>
           <Input
@@ -80,7 +114,7 @@ export function RegisterForm() {
           <Input
             id="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             aria-invalid={!!form.formState.errors.password}
             {...form.register("password")}
           />

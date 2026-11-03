@@ -15,7 +15,7 @@ async function getUserEmail(): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(`${process.env.API_URL}/user/me`, {
+    const response = await fetch(`${process.env.API_URL}/auth/me`, {
       headers: {
         "x-internal-secret": process.env.INTERNAL_SECRET ?? "",
         "x-user-id": session.userId,
