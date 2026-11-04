@@ -1,9 +1,12 @@
-import { credentialsSchema, userInputSchema } from "@radarstock/contracts";
+import {
+  adminCreateUserSchema,
+  credentialsSchema,
+} from "@radarstock/contracts";
 import { authService } from "../services";
 import type { Request, Response } from "express";
 
-async function register(req: Request, res: Response) {
-  const parsed = userInputSchema.safeParse(req.body);
+async function adminRegister(req: Request, res: Response) {
+  const parsed = adminCreateUserSchema.safeParse(req.body);
 
   if (!parsed.success) {
     res.status(400).json({
@@ -12,7 +15,7 @@ async function register(req: Request, res: Response) {
     return;
   }
 
-  const { status, data } = await authService.register(parsed.data);
+  const { status, data } = await authService.adminRegister(parsed.data);
   res.status(status).json(data);
 }
 
@@ -45,7 +48,7 @@ async function me(req: Request, res: Response) {
 }
 
 export const authController = {
-  register,
+  adminRegister,
   login,
   me,
 };

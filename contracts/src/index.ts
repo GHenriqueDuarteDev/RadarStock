@@ -8,10 +8,16 @@ export {
 export {
   userInputSchema,
   userRoleSchema,
+  userStatusSchema,
   updateUserRoleSchema,
+  adminCreateUserSchema,
+  publicUserRecordSchema,
   type UserInput,
   type UserRole,
+  type UserStatus,
   type UpdateUserRole,
+  type AdminCreateUser,
+  type PublicUserRecord,
 } from "./user";
 
 export {

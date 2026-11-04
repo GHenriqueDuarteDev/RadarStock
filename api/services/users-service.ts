@@ -1,5 +1,9 @@
 import { hash } from "@node-rs/argon2";
-import type { UserInput, UserRole } from "@radarstock/contracts";
+import type {
+  AdminCreateUser,
+  UserInput,
+  UserRole,
+} from "@radarstock/contracts";
 import { prisma } from "../src/db";
 
 const publicUserSelect = {
@@ -12,6 +16,65 @@ const publicUserSelect = {
   createdAt: true,
   updatedAt: true,
 } as const;
+
+async function registerUser(body: UserInput) {
+  const passwordHash = await hash(body.password);
+
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email: body.email,
+        passwordHash,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        role: "viewer",
+        status: "active",
+      },
+    });
+
+    return {
+      status: 201,
+      data: {
+        id: user.id,
+        email: user.email,
+      },
+    };
+  } catch {
+    return {
+      status: 409,
+      data: {
+        message: "Este E-mail ja esta cadastrado.",
+      },
+    };
+  }
+}
+
+async function createByAdmin(input: AdminCreateUser) {
+  const passwordHash = await hash(input.password);
+
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email: input.email,
+        passwordHash,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        role: input.role,
+        status: "active",
+      },
+      select: publicUserSelect,
+    });
+
+    return { status: 201, data: user };
+  } catch {
+    return {
+      status: 409,
+      data: {
+        message: "Este E-mail ja esta cadastrado.",
+      },
+    };
+  }
+}
 
 async function getAllUsers() {
   const users = await prisma.user.findMany({
@@ -112,7 +175,16 @@ async function updateUserById(
   }
 }
 
-async function updateUserRole(id: string, role: UserRole) {
+async function updateUserRole(id: string, role: UserRole, actorId: string) {
+  if (actorId === id) {
+    return {
+      status: 403,
+      data: {
+        message: "Você não pode alterar a própria permissão.",
+      },
+    };
+  }
+
   const existing = await prisma.user.findUnique({
     where: { id },
     select: { id: true },
@@ -136,7 +208,16 @@ async function updateUserRole(id: string, role: UserRole) {
   return { status: 200, data: user };
 }
 
-async function deleteUserById(id: string) {
+async function deleteUserById(id: string, actorId: string) {
+  if (actorId === id) {
+    return {
+      status: 403,
+      data: {
+        message: "Você não pode deletar a própria conta.",
+      },
+    };
+  }
+
   const existing = await prisma.user.findUnique({
     where: { id },
     select: { id: true },
@@ -171,6 +252,8 @@ async function deleteUserById(id: string) {
 }
 
 export const userService = {
+  registerUser,
+  createByAdmin,
   getAllUsers,
   getUserById,
   updateUserById,
