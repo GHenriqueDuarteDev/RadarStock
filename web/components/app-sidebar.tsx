@@ -43,6 +43,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { toast } from "@/components/ui/toast";
+import { hasRequiredRole } from "@/app/_lib/route-access";
 
 type NavItem = {
   title: string;
@@ -65,6 +66,7 @@ const items: NavItem[] = [
 type SidebarUser = {
   id: string;
   email: string;
+  role: string;
 };
 
 function displayNameFromEmail(email: string) {
@@ -162,25 +164,32 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  {item.href ? (
-                    <SidebarMenuButton
-                      size="lg"
-                      render={<Link href={item.href} />}
-                      isActive={pathname === item.href}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  ) : (
-                    <SidebarMenuButton size="lg">
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  )}
-                </SidebarMenuItem>
-              ))}
+              {items
+                .filter((item) => {
+                  if (!item.href) {
+                    return true;
+                  }
+                  return hasRequiredRole(item.href, user?.role);
+                })
+                .map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    {item.href ? (
+                      <SidebarMenuButton
+                        size="lg"
+                        render={<Link href={item.href} />}
+                        isActive={pathname === item.href}
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    ) : (
+                      <SidebarMenuButton size="lg">
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

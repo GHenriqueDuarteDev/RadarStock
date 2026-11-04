@@ -1,20 +1,19 @@
-import { getIronSession } from "iron-session";
 import { NextRequest, NextResponse } from "next/server";
-import { sessionOptions, type SessionData } from "./app/_lib/session";
+import { requireAuth } from "@/app/_lib/proxies/require-auth";
+import { requireRole } from "@/app/_lib/proxies/require-role";
 
 export async function proxy(request: NextRequest) {
-  const response = NextResponse.next();
-  const session = await getIronSession<SessionData>(
-    request,
-    response,
-    sessionOptions,
-  );
-
-  if (!session.userId) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  const auth = await requireAuth(request);
+  if (auth instanceof NextResponse) {
+    return auth;
   }
 
-  return response;
+  const roleGate = await requireRole(request, auth.userId);
+  if (roleGate) {
+    return roleGate;
+  }
+
+  return auth.response;
 }
 
 export const config = {
