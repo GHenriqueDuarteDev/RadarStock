@@ -1,24 +1,27 @@
 import { describe, beforeEach, it, vi, expect } from "vitest";
 
-const { createMock, findUniqueMock, hashMock, verifyMock } = vi.hoisted(() => ({
-  createMock: vi.fn(),
+const { findUniqueMock, verifyMock, createByAdminMock } = vi.hoisted(() => ({
   findUniqueMock: vi.fn(),
-  hashMock: vi.fn(),
   verifyMock: vi.fn(),
+  createByAdminMock: vi.fn(),
 }));
 
 vi.mock("../../../src/db", () => ({
   prisma: {
     user: {
       findUnique: findUniqueMock,
-      create: createMock,
     },
   },
 }));
 
 vi.mock("@node-rs/argon2", () => ({
-  hash: vi.fn(),
   verify: verifyMock,
+}));
+
+vi.mock("../../../services/users-service", () => ({
+  userService: {
+    createByAdmin: createByAdminMock,
+  },
 }));
 
 import { authService } from "../../../services/auth-service";
@@ -88,10 +91,11 @@ describe("authService.me", () => {
     verifyMock.mockReset();
   });
 
-  it("returns 200 with id and email when user exists", async () => {
+  it("returns 200 with id, email and role when user exists", async () => {
     findUniqueMock.mockResolvedValue({
       id: "user_1",
       email: "teste@teste.com",
+      role: "admin",
     });
     verifyMock.mockResolvedValue(true);
 
@@ -99,7 +103,7 @@ describe("authService.me", () => {
 
     expect(result).toEqual({
       status: 200,
-      data: { id: "user_1", email: "teste@teste.com" },
+      data: { id: "user_1", email: "teste@teste.com", role: "admin" },
     });
   });
 
@@ -115,46 +119,35 @@ describe("authService.me", () => {
   });
 });
 
-describe("authService.register", () => {
+describe("authService.adminRegister", () => {
   beforeEach(() => {
-    hashMock.mockReset();
-    verifyMock.mockReset();
+    createByAdminMock.mockReset();
   });
 
-  it("returns 201 with id and email when registration succeeds", async () => {
-    hashMock.mockResolvedValue("hashed");
-    createMock.mockResolvedValue({
-      id: "user_1",
-      email: "teste2@teste.com",
-    });
-
-    const result = await authService.register({
-      email: "teste2@teste.com",
+  it("delegates to userService.createByAdmin", async () => {
+    const created = {
+      id: "user_2",
+      email: "novo@teste.com",
       firstName: "Ana",
-      lastName: "Mariana",
-      password: "teste12345",
-    });
+      lastName: "Silva",
+      role: "operator" as const,
+      status: "active" as const,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+    };
+    createByAdminMock.mockResolvedValue({ status: 201, data: created });
 
-    expect(result).toEqual({
-      status: 201,
-      data: { id: "user_1", email: "teste2@teste.com" },
-    });
-  });
-
-  it("returns 409 when email is already registered", async () => {
-    hashMock.mockResolvedValue("hashed");
-    createMock.mockRejectedValue(new Error("Unique constraint failed"));
-
-    const result = await authService.register({
-      email: "teste@teste.com",
+    const input = {
+      email: "novo@teste.com",
       firstName: "Ana",
-      lastName: "Regina",
+      lastName: "Silva",
       password: "teste12345",
-    });
+      role: "operator" as const,
+    };
 
-    expect(result).toEqual({
-      status: 409,
-      data: { message: "Este E-mail ja esta cadastrado." },
-    });
+    const result = await authService.adminRegister(input);
+
+    expect(createByAdminMock).toHaveBeenCalledWith(input);
+    expect(result).toEqual({ status: 201, data: created });
   });
 });
