@@ -12,6 +12,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard": "Visão geral",
   "/products": "Produtos",
   "/team": "Equipe",
+  "/settings": "Configurações",
 };
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {

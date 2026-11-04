@@ -3,7 +3,10 @@ import type { UserRole } from "@radarstock/contracts";
 export const routeRoleRules: ReadonlyArray<{
   prefix: string;
   roles: readonly UserRole[];
-}> = [{ prefix: "/team", roles: ["admin"] }];
+}> = [
+  { prefix: "/team", roles: ["admin"] },
+  { prefix: "/settings", roles: ["admin"] },
+];
 
 export function getRequiredRoles(
   pathname: string,
