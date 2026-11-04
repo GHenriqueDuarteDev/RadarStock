@@ -7,6 +7,7 @@ import {
 
 const userRouter = Router();
 
+userRouter.post("/", userController.registerUser);
 userRouter.get(
   "/",
   requireInternalUser,
