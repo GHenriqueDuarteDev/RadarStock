@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeftRightIcon,
   BarChart3Icon,
@@ -42,6 +42,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { toast } from "@/components/ui/toast";
 
 type NavItem = {
   title: string;
@@ -84,17 +85,34 @@ function initialsFromEmail(email: string) {
   return name.slice(0, 2).toUpperCase();
 }
 
-function logout() {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = "/api/logout";
-  document.body.appendChild(form);
-  form.submit();
-}
-
 export function AppSidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<SidebarUser | null>(null);
+
+  const router = useRouter();
+
+  async function logout() {
+    try {
+      const response = await fetch("/api/logout", { method: "POST" });
+      if (!response.ok) {
+        toast.add({
+          title: "Não foi possível sair. Tente novamente.",
+          type: "error",
+        });
+        return;
+      }
+      toast.add({
+        title: "Você saiu da aplicação",
+        type: "success",
+      });
+      router.push("/login");
+    } catch {
+      toast.add({
+        title: "Não foi possível sair. Tente novamente.",
+        type: "error",
+      });
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
