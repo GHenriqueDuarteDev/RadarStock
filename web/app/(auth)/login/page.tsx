@@ -11,7 +11,7 @@ import {
 
 export default function LoginPage() {
   return (
-    <Card className="w-full max-w-sm space-y-6">
+    <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle>Entrar</CardTitle>
         <CardDescription>Card Description</CardDescription>
