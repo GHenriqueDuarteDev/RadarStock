@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const apiResponse = await fetch(`${process.env.API_URL}/auth/register`, {
+  const apiResponse = await fetch(`${process.env.API_URL}/users`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(parsed.data),
