@@ -23,6 +23,10 @@ export const publicProductSchema = z.object({
   barcode: z.string().nullable(),
   description: z.string().nullable(),
   categoryId: z.string().min(1),
+  category: z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+  }),
   cost: z.number().nonnegative(),
   salePrice: z.number().nonnegative(),
   minStock: z.number().int().nonnegative(),
