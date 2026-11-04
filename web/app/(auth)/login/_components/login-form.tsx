@@ -10,28 +10,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { useState } from "react";
-
 import { Credentials, credentialsSchema } from "@radarstock/contracts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/toast";
 
 export function LoginForm() {
-  const [serverError, setServerError] = useState<string | null>(null);
   const router = useRouter();
 
   const form = useForm<Credentials>({
     resolver: zodResolver(credentialsSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: "admin@radarstock.local",
+      password: "Admin123!",
     },
   });
 
   async function onSubmit(data: Credentials) {
-    setServerError(null);
-
     try {
       const response = await fetch("/api/login", {
         method: "POST",
@@ -44,13 +40,23 @@ export function LoginForm() {
       const result = await response.json();
 
       if (!response.ok) {
-        setServerError(result.message ?? "Não foi possivel realizar o login.");
+        toast.add({
+          title: result.message ?? "Não foi possivel realizar o login.",
+          type: "error",
+        });
         return;
       }
 
+      toast.add({
+        title: "Bem-vindo ao RadarStock",
+        type: "success",
+      });
       router.push("/dashboard");
     } catch {
-      setServerError("Não foi possível conectar ao servidor. Tente novamente.");
+      toast.add({
+        title: "Não foi possível conectar ao servidor. Tente novamente.",
+        type: "error",
+      });
     }
   }
 
@@ -86,12 +92,6 @@ export function LoginForm() {
             <FieldError errors={[form.formState.errors.password]} />
           )}
         </Field>
-
-        {serverError && (
-          <p role="alert" className="text-sm text-destructive">
-            {serverError}
-          </p>
-        )}
 
         <Field orientation="horizontal">
           <Button

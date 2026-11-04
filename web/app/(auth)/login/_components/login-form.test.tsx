@@ -4,14 +4,22 @@ import userEvent from "@testing-library/user-event";
 import { LoginForm } from "./login-form";
 
 const pushMock = vi.fn();
+const toastAddMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
+vi.mock("@/components/ui/toast", () => ({
+  toast: {
+    add: (...args: unknown[]) => toastAddMock(...args),
+  },
+}));
+
 describe("Test login-form.tsx", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    toastAddMock.mockReset();
     vi.stubGlobal("fetch", vi.fn());
   });
 
@@ -29,6 +37,10 @@ describe("Test login-form.tsx", () => {
     await user.click(screen.getByTestId("button-login"));
 
     await waitFor(() => {
+      expect(toastAddMock).toHaveBeenCalledWith({
+        title: "Bem-vindo ao RadarStock",
+        type: "success",
+      });
       expect(pushMock).toHaveBeenCalledWith("/dashboard");
     });
   });
@@ -46,7 +58,12 @@ describe("Test login-form.tsx", () => {
     await user.type(screen.getByLabelText(/senha/i), "senha12345");
     await user.click(screen.getByTestId("button-login"));
 
-    expect(await screen.findByText(/e-mail ou senha inválidos/i));
+    await waitFor(() => {
+      expect(toastAddMock).toHaveBeenCalledWith({
+        title: "E-mail ou senha inválidos.",
+        type: "error",
+      });
+    });
     expect(pushMock).not.toHaveBeenCalled();
   });
 });
