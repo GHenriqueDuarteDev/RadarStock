@@ -59,7 +59,7 @@ const items: NavItem[] = [
   { title: "Recebimentos", icon: TruckIcon },
   { title: "Inventário", icon: ClipboardListIcon },
   { title: "Relatórios", icon: BarChart3Icon },
-  { title: "Equipe", icon: UsersIcon },
+  { title: "Equipe", href: "/team", icon: UsersIcon },
 ];
 
 type SidebarUser = {
