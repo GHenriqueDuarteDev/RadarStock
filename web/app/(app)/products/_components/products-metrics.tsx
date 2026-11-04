@@ -1,16 +1,16 @@
 import {
-  AlertTriangleIcon,
   Grid2X2Icon,
   PackageIcon,
-  PackageXIcon,
+  PackageCheckIcon,
+  PackageMinusIcon,
 } from "lucide-react";
 
 import { MetricCard, MetricCards } from "@/components/metric-cards";
 
-type ProductsMetricsData = {
+export type ProductsMetricsData = {
   total: number | null;
-  lowStock: number | null;
-  outOfStock: number | null;
+  active: number | null;
+  inactive: number | null;
   categories: number | null;
 };
 
@@ -28,15 +28,15 @@ export function ProductsMetrics({ data = null }: ProductsMetricsProps) {
         hint="-- período"
       />
       <MetricCard
-        label="Estoque baixo"
-        value={data?.lowStock}
-        icon={AlertTriangleIcon}
+        label="Ativos"
+        value={data?.active}
+        icon={PackageCheckIcon}
         hint="-- período"
       />
       <MetricCard
-        label="Sem estoque"
-        value={data?.outOfStock}
-        icon={PackageXIcon}
+        label="Inativos"
+        value={data?.inactive}
+        icon={PackageMinusIcon}
         hint="-- período"
       />
       <MetricCard

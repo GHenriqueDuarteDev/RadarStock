@@ -1,36 +1,37 @@
+"use client";
+
 import { MoreHorizontalIcon } from "lucide-react";
+import type { PublicProduct, ProductStatus } from "@radarstock/contracts";
 
 import { ListPanel } from "@/components/list-panel";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { displayValue } from "@/lib/utils";
 
-type ProductStatus = "active" | "low_stock" | "out_of_stock";
-
-type ProductRow = {
-  id: string;
-  name: string | null;
-  sku: string | null;
-  category: string | null;
-  stock: number | null;
-  cost: number | null;
-  salePrice: number | null;
-  status: ProductStatus | null;
+type ProductRow = PublicProduct & {
+  /** Reserved for StockBalance integration */
+  stockQuantity?: number | null;
 };
 
 type ProductsTableProps = {
   data?: ProductRow[];
+  onEdit?: (product: PublicProduct) => void;
+  onDelete?: (product: PublicProduct) => void;
 };
 
 const statusLabel: Record<ProductStatus, string> = {
   active: "Ativo",
-  low_stock: "Estoque baixo",
-  out_of_stock: "Sem estoque",
+  inactive: "Inativo",
 };
 
 const statusClassName: Record<ProductStatus, string> = {
   active: "bg-success/15 text-success",
-  low_stock: "bg-warning/20 text-warning-foreground",
-  out_of_stock: "bg-critical/15 text-critical",
+  inactive: "bg-critical/15 text-critical",
 };
 
 function formatCurrency(value: number | null | undefined) {
@@ -45,7 +46,7 @@ function formatCurrency(value: number | null | undefined) {
 
 function formatStock(value: number | null | undefined) {
   if (value === null || value === undefined) {
-    return displayValue(value);
+    return displayValue(null);
   }
   return `${value} un`;
 }
@@ -68,7 +69,11 @@ function StatusBadge({ status }: { status: ProductStatus | null }) {
   );
 }
 
-export function ProductsTable({ data = [] }: ProductsTableProps) {
+export function ProductsTable({
+  data = [],
+  onEdit,
+  onDelete,
+}: ProductsTableProps) {
   return (
     <ListPanel title="Lista de produtos" totalCount={data.length}>
       <div className="overflow-x-auto">
@@ -148,10 +153,10 @@ export function ProductsTable({ data = [] }: ProductsTableProps) {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    {displayValue(product.category)}
+                    {displayValue(product.category.name)}
                   </td>
                   <td className="px-4 py-3 text-right font-mono">
-                    {formatStock(product.stock)}
+                    {formatStock(product.stockQuantity ?? null)}
                   </td>
                   <td className="px-4 py-3 text-right font-mono">
                     {formatCurrency(product.cost)}
@@ -163,14 +168,30 @@ export function ProductsTable({ data = [] }: ProductsTableProps) {
                     <StatusBadge status={product.status} />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Ações do produto"
-                    >
-                      <MoreHorizontalIcon />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        data-testid={`product-actions-${product.id}`}
+                        aria-label={`Ações de ${product.name}`}
+                        className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
+                      >
+                        <MoreHorizontalIcon className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-44">
+                        <DropdownMenuItem
+                          onClick={() => onEdit?.(product)}
+                          data-testid={`product-edit-${product.id}`}
+                        >
+                          Alterar dados
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => onDelete?.(product)}
+                          data-testid={`product-delete-${product.id}`}
+                        >
+                          Desativar produto
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))
