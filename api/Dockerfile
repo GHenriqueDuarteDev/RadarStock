@@ -6,9 +6,7 @@ WORKDIR /app/api
 RUN npm install
 
 RUN rm -rf node_modules/@radarstock/contracts \
-  && mkdir -p node_modules/@radarstock \
-  && cp -r /app/contracts node_modules/@radarstock/contracts \
-  && npm install --omit=dev --prefix node_modules/@radarstock/contracts
+  && mkdir -p node_modules/@radarstock/contracts
 
 COPY api ./
 RUN npx prisma generate
