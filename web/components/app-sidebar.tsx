@@ -54,7 +54,7 @@ type NavItem = {
 const items: NavItem[] = [
   { title: "Visão geral", href: "/dashboard", icon: LayoutDashboardIcon },
   { title: "Produtos", href: "/products", icon: PackageIcon },
-  { title: "Galpões", icon: WarehouseIcon },
+  { title: "Galpões", href: "/warehouses", icon: WarehouseIcon },
   { title: "Movimentações", icon: ArrowLeftRightIcon },
   { title: "Vendas", icon: ShoppingCartIcon },
   { title: "Recebimentos", icon: TruckIcon },
