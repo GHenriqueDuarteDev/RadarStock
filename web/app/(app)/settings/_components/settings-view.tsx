@@ -2,15 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  alertRulesListSchema,
   publicCategorySchema,
+  publicUserSchema,
+  type AlertRule,
   type PublicCategory,
+  type PublicUser,
 } from "@radarstock/contracts";
-import { PlusIcon } from "lucide-react";
 import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
 
+import { AlertRulesPanel } from "./alert-rules-panel";
 import { CategoriesTable } from "./categories-table";
 import { CreateCategorySheet } from "./create-category-sheet";
 import { DeleteCategoryDialog } from "./delete-category-dialog";
@@ -35,12 +38,13 @@ async function readErrorMessage(response: Response) {
 
 export function SettingsView() {
   const [categories, setCategories] = useState<PublicCategory[]>([]);
+  const [rules, setRules] = useState<AlertRule[]>([]);
+  const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SettingsSheet>(null);
 
   const loadCategories = useCallback(async () => {
-    setLoadError(null);
     const response = await fetch("/api/categories");
     if (!response.ok) {
       throw new Error(await readErrorMessage(response));
@@ -49,19 +53,36 @@ export function SettingsView() {
     setCategories(data);
   }, []);
 
+  const loadRules = useCallback(async () => {
+    const response = await fetch("/api/alert-rules");
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+    const data = alertRulesListSchema.parse(await response.json());
+    setRules(data.items);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     async function initialLoad() {
       setLoading(true);
+      setLoadError(null);
       try {
-        await loadCategories();
+        const meResponse = await fetch("/api/me");
+        if (meResponse.ok) {
+          const me = publicUserSchema.parse(await meResponse.json());
+          if (!cancelled) {
+            setCurrentUser(me);
+          }
+        }
+        await Promise.all([loadCategories(), loadRules()]);
       } catch (err) {
         if (!cancelled) {
           setLoadError(
             err instanceof Error
               ? err.message
-              : "Não foi possível carregar as categorias.",
+              : "Não foi possível carregar as configurações.",
           );
         }
       } finally {
@@ -74,7 +95,7 @@ export function SettingsView() {
     return () => {
       cancelled = true;
     };
-  }, [loadCategories]);
+  }, [loadCategories, loadRules]);
 
   function handleCreated(created: PublicCategory) {
     setCategories((current) =>
@@ -99,40 +120,46 @@ export function SettingsView() {
     setSheet(null);
   }
 
+  function handleRuleChange(updated: AlertRule) {
+    setRules((current) =>
+      current.map((rule) => (rule.kind === updated.kind ? updated : rule)),
+    );
+  }
+
+  const canEditRules = currentUser?.role === "admin";
+
   return (
     <>
       <PageHeader
         category="Sistema"
         title="Configurações"
-        description="Gerencie configurações gerais da aplicação, começando pelas categorias do catálogo."
-        action={
-          <Button
-            type="button"
-            data-testid="new-category"
-            onClick={() => setSheet({ type: "create" })}
-          >
-            <PlusIcon data-icon="inline-start" />
-            Nova categoria
-          </Button>
-        }
+        description="Gerencie categorias do catálogo e gatilhos de alertas operacionais."
       />
       {loading ? (
         <p
           className="text-sm text-muted-foreground"
           data-testid="settings-loading"
         >
-          Carregando categorias...
+          Carregando configurações...
         </p>
       ) : loadError ? (
         <p role="alert" className="text-sm text-destructive">
           {loadError}
         </p>
       ) : (
-        <CategoriesTable
-          data={categories}
-          onEdit={(category) => setSheet({ type: "edit", category })}
-          onDelete={(category) => setSheet({ type: "delete", category })}
-        />
+        <div className="space-y-4 flex gap-5">
+          <CategoriesTable
+            data={categories}
+            onCreate={() => setSheet({ type: "create" })}
+            onEdit={(category) => setSheet({ type: "edit", category })}
+            onDelete={(category) => setSheet({ type: "delete", category })}
+          />
+          <AlertRulesPanel
+            rules={rules}
+            canEdit={canEditRules}
+            onRuleChange={handleRuleChange}
+          />
+        </div>
       )}
       {sheet?.type === "create" ? (
         <CreateCategorySheet

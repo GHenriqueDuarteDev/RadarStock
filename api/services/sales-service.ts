@@ -3,6 +3,7 @@ import {
   type SaleInput,
 } from "@radarstock/contracts";
 import { prisma } from "../src/db";
+import { alertsService } from "./alerts-service";
 
 const saleInclude = {
   warehouse: { select: { name: true } },
@@ -287,6 +288,11 @@ async function createSale(input: SaleInput, userId: string) {
       return created;
     });
 
+    for (const item of sale.items) {
+      await alertsService.evaluateProduct(item.productId);
+    }
+    await alertsService.evaluateWarehouse(sale.warehouseId);
+
     return {
       status: 201,
       data: toPublicSale(sale as SaleWithRelations),
@@ -377,6 +383,11 @@ async function cancelSale(id: string, userId: string) {
 
     return updated;
   });
+
+  for (const item of sale.items) {
+    await alertsService.evaluateProduct(item.productId);
+  }
+  await alertsService.evaluateWarehouse(sale.warehouseId);
 
   return {
     status: 200,

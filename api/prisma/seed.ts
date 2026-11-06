@@ -2,6 +2,7 @@ import "dotenv/config";
 import { hash } from "@node-rs/argon2";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import { alertsService } from "../services/alerts-service";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -597,6 +598,26 @@ async function main() {
   }
 
   console.log("Category seed ok");
+
+  const alertKinds = [
+    "low_stock",
+    "out_of_stock",
+    "warehouse_near_capacity",
+    "warehouse_full",
+    "inventory_pending",
+    "inventory_discrepancy",
+    "inactive_with_stock",
+  ] as const;
+
+  for (const kind of alertKinds) {
+    await prisma.alertRule.upsert({
+      where: { kind },
+      update: {},
+      create: { kind, enabled: true },
+    });
+  }
+
+  console.log(`Alert rules seed ok: ${alertKinds.length}`);
 
   const categories = await prisma.category.findMany({
     where: {
@@ -1315,6 +1336,10 @@ async function main() {
   }
 
   console.log(`Inventory seed ok: ${inventorySeedCount} inventory counts`);
+
+  await alertsService.reevaluateAll();
+  const openAlerts = await prisma.alert.count({ where: { status: "open" } });
+  console.log(`Alerts seed ok: ${openAlerts} open alerts`);
 }
 
 main()

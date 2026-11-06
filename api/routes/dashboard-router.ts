@@ -24,10 +24,5 @@ dashboardRouter.get(
   requireInternalUser,
   dashboardController.getRecentMovements,
 );
-dashboardRouter.get(
-  "/alerts",
-  requireInternalUser,
-  dashboardController.getAlerts,
-);
 
 export { dashboardRouter };

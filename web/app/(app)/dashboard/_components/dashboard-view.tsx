@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  dashboardAlertsSchema,
+  alertsListSchema,
   dashboardMetricsSchema,
   dashboardMovementsSeriesSchema,
   dashboardRecentMovementsSchema,
   dashboardWarehouseDistributionSchema,
-  type DashboardAlerts,
+  type AlertsList,
   type DashboardDays,
   type DashboardMetrics,
   type DashboardMovementsSeries,
@@ -28,7 +28,7 @@ export function DashboardView() {
   const [distribution, setDistribution] =
     useState<DashboardWarehouseDistribution | null>(null);
   const [recent, setRecent] = useState<DashboardRecentMovements | null>(null);
-  const [alerts, setAlerts] = useState<DashboardAlerts | null>(null);
+  const [alerts, setAlerts] = useState<AlertsList | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ export function DashboardView() {
           fetch(`/api/dashboard/movements-series?days=${initialDays}`),
           fetch("/api/dashboard/warehouse-distribution"),
           fetch("/api/dashboard/recent-movements"),
-          fetch("/api/dashboard/alerts"),
+          fetch("/api/alerts?status=open&limit=20"),
         ]);
 
       const [
@@ -98,7 +98,7 @@ export function DashboardView() {
         dashboardWarehouseDistributionSchema.parse(distributionData),
       );
       setRecent(dashboardRecentMovementsSchema.parse(recentData));
-      setAlerts(dashboardAlertsSchema.parse(alertsData));
+      setAlerts(alertsListSchema.parse(alertsData));
     } catch (error) {
       setLoadError(
         error instanceof Error
@@ -149,7 +149,7 @@ export function DashboardView() {
   return (
     <>
       <DashboardMetricsCards data={metrics} />
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid items-start gap-3 lg:grid-cols-2">
         <StockMovementChart
           data={series?.points ?? []}
           days={days}
@@ -162,7 +162,7 @@ export function DashboardView() {
         <RecentMovements data={recent?.items ?? []} />
         <OperationalAlerts
           data={alerts?.items ?? []}
-          totalCount={alerts?.totalCount ?? 0}
+          totalOpen={alerts?.totalOpen ?? 0}
         />
       </div>
     </>

@@ -52,6 +52,14 @@ vi.mock("../../../src/db", () => ({
   },
 }));
 
+vi.mock("../../../services/alerts-service", () => ({
+  alertsService: {
+    evaluateProduct: vi.fn().mockResolvedValue(undefined),
+    evaluateWarehouse: vi.fn().mockResolvedValue(undefined),
+    evaluateInventory: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { stockMovementService } from "../../../services/stock-movements-service";
 
 const movementRow = {

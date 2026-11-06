@@ -4,6 +4,7 @@ import {
   type UpdateProductInput,
 } from "@radarstock/contracts";
 import { prisma } from "../src/db";
+import { alertsService } from "./alerts-service";
 
 const publicProductInclude = {
   category: {
@@ -145,6 +146,8 @@ async function createProduct(input: ProductInput) {
       include: publicProductInclude,
     });
 
+    await alertsService.evaluateProduct(product.id);
+
     return { status: 201, data: toPublicProduct(product) };
   } catch {
     return {
@@ -202,6 +205,8 @@ async function updateProductById(id: string, input: UpdateProductInput) {
       include: publicProductInclude,
     });
 
+    await alertsService.evaluateProduct(product.id);
+
     return { status: 200, data: toPublicProduct(product) };
   } catch {
     return {
@@ -229,6 +234,8 @@ async function deleteProductById(id: string) {
       where: { id },
       data: { status: "inactive" },
     });
+
+    await alertsService.evaluateProduct(id);
 
     return {
       status: 200,

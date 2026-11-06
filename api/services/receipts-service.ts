@@ -3,6 +3,7 @@ import {
   type ReceiptInput,
 } from "@radarstock/contracts";
 import { prisma } from "../src/db";
+import { alertsService } from "./alerts-service";
 
 const receiptInclude = {
   warehouse: { select: { name: true } },
@@ -299,6 +300,11 @@ async function createReceipt(input: ReceiptInput, userId: string) {
       return created;
     });
 
+    for (const item of receipt.items) {
+      await alertsService.evaluateProduct(item.productId);
+    }
+    await alertsService.evaluateWarehouse(receipt.warehouseId);
+
     return {
       status: 201,
       data: toPublicReceipt(receipt as ReceiptWithRelations),
@@ -386,6 +392,11 @@ async function cancelReceipt(id: string, userId: string) {
 
       return updated;
     });
+
+    for (const item of receipt.items) {
+      await alertsService.evaluateProduct(item.productId);
+    }
+    await alertsService.evaluateWarehouse(receipt.warehouseId);
 
     return {
       status: 200,

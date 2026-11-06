@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  alertRulesRouter,
+  alertsRouter,
   authRouter,
   categoryRouter,
   dashboardRouter,

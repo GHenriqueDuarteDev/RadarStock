@@ -176,9 +176,6 @@ export {
   dashboardWarehouseDistributionSchema,
   dashboardRecentMovementSchema,
   dashboardRecentMovementsSchema,
-  dashboardAlertKindSchema,
-  dashboardAlertItemSchema,
-  dashboardAlertsSchema,
   type DashboardDays,
   type DashboardMovementsQuery,
   type DashboardMetrics,
@@ -188,9 +185,6 @@ export {
   type DashboardWarehouseDistribution,
   type DashboardRecentMovement,
   type DashboardRecentMovements,
-  type DashboardAlertKind,
-  type DashboardAlertItem,
-  type DashboardAlerts,
 } from "./dashboard";
 
 export {
