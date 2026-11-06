@@ -8,3 +8,4 @@ export { saleService } from "./sales-service";
 export { receiptService } from "./receipts-service";
 export { inventoryCountService } from "./inventory-counts-service";
 export { dashboardService } from "./dashboard-service";
+export { reportsService } from "./reports-service";

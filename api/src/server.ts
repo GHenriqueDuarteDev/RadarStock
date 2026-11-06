@@ -6,6 +6,7 @@ import {
   inventoryCountsRouter,
   productRouter,
   receiptsRouter,
+  reportsRouter,
   salesRouter,
   stockMovementRouter,
   userRouter,
@@ -31,6 +32,7 @@ app.use("/sales", salesRouter);
 app.use("/receipts", receiptsRouter);
 app.use("/inventory", inventoryCountsRouter);
 app.use("/dashboard", dashboardRouter);
+app.use("/reports", reportsRouter);
 
 app.listen(port, "0.0.0.0", () => {
   console.log("API pronta na porta 3001");
