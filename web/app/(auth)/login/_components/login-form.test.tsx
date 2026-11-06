@@ -32,8 +32,12 @@ describe("Test login-form.tsx", () => {
 
     render(<LoginForm />);
 
-    await user.type(screen.getByLabelText(/e-mail/i), "teste@teste.com");
-    await user.type(screen.getByLabelText(/senha/i), "teste12345");
+    const email = screen.getByLabelText(/e-mail/i);
+    const password = screen.getByLabelText(/senha/i);
+    await user.clear(email);
+    await user.type(email, "teste@teste.com");
+    await user.clear(password);
+    await user.type(password, "teste12345");
     await user.click(screen.getByTestId("button-login"));
 
     await waitFor(() => {
@@ -54,8 +58,12 @@ describe("Test login-form.tsx", () => {
 
     render(<LoginForm />);
 
-    await user.type(screen.getByLabelText(/e-mail/i), "voce@exemplo.com");
-    await user.type(screen.getByLabelText(/senha/i), "senha12345");
+    const email = screen.getByLabelText(/e-mail/i);
+    const password = screen.getByLabelText(/senha/i);
+    await user.clear(email);
+    await user.type(email, "voce@exemplo.com");
+    await user.clear(password);
+    await user.type(password, "senha12345");
     await user.click(screen.getByTestId("button-login"));
 
     await waitFor(() => {
