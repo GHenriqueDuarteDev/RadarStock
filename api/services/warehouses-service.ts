@@ -4,6 +4,7 @@ import {
   type WarehouseInput,
 } from "@radarstock/contracts";
 import { prisma } from "../src/db";
+import { alertsService } from "./alerts-service";
 
 async function listWarehouses(page: number, name?: string) {
   const skip = (page - 1) * PAGE_SIZE;
@@ -78,6 +79,8 @@ async function createWarehouse(input: WarehouseInput) {
       },
     });
 
+    await alertsService.evaluateWarehouse(warehouse.id);
+
     return { status: 201, data: warehouse };
   } catch {
     return {
@@ -111,6 +114,8 @@ async function updateWarehouseById(id: string, input: UpdateWarehouseInput) {
         ...(input.status !== undefined ? { status: input.status } : {}),
       },
     });
+
+    await alertsService.evaluateWarehouse(warehouse.id);
 
     return { status: 200, data: warehouse };
   } catch {

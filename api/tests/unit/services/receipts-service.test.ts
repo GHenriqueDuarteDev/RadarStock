@@ -30,6 +30,14 @@ const {
   transactionMock: vi.fn(),
 }));
 
+vi.mock("../../../services/alerts-service", () => ({
+  alertsService: {
+    evaluateProduct: vi.fn().mockResolvedValue(undefined),
+    evaluateWarehouse: vi.fn().mockResolvedValue(undefined),
+    evaluateInventory: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 vi.mock("../../../src/db", () => ({
   prisma: {
     $transaction: transactionMock,

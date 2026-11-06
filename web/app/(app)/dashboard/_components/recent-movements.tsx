@@ -69,7 +69,7 @@ function TypeBadge({ kind }: { kind: BadgeKind }) {
 
 export function RecentMovements({ data = [] }: RecentMovementsProps) {
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader>
         <CardTitle>Últimas movimentações</CardTitle>
       </CardHeader>

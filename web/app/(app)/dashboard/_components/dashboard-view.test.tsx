@@ -76,14 +76,22 @@ const sampleRecent = {
 };
 
 const sampleAlerts = {
-  totalCount: 3,
+  totalOpen: 1,
+  unreadCount: 1,
   items: [
     {
-      id: "pending-counts",
-      kind: "pending-counts" as const,
-      title: "Contagem de inventário pendente",
-      count: 3,
-      detail: "3 inventários em rascunho",
+      id: "a1",
+      kind: "inventory_pending" as const,
+      status: "open" as const,
+      title: "Inventário pendente",
+      detail: "INV-001 está em rascunho",
+      entityType: "inventory_count" as const,
+      entityId: "inv1",
+      payload: null,
+      readAt: null,
+      createdAt: "2026-01-01T10:00:00.000Z",
+      updatedAt: "2026-01-01T10:00:00.000Z",
+      resolvedAt: null,
     },
   ],
 };
@@ -108,7 +116,7 @@ describe("DashboardView", () => {
       if (url === "/api/dashboard/recent-movements") {
         return jsonResponse(sampleRecent);
       }
-      if (url === "/api/dashboard/alerts") {
+      if (url.startsWith("/api/alerts")) {
         return jsonResponse(sampleAlerts);
       }
       return jsonResponse({ message: "Not found" }, false, 404);
@@ -120,7 +128,7 @@ describe("DashboardView", () => {
     expect(screen.getByText("12")).toBeInTheDocument();
     expect(screen.getByText("Galpões inativos")).toBeInTheDocument();
     expect(screen.getByText("Parafuso M6")).toBeInTheDocument();
-    expect(screen.getByText("Contagem de inventário pendente")).toBeInTheDocument();
+    expect(screen.getByText("Inventário pendente")).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith("/api/dashboard/metrics");
     expect(fetch).toHaveBeenCalledWith("/api/dashboard/movements-series?days=7");
   });
@@ -144,7 +152,7 @@ describe("DashboardView", () => {
       if (url === "/api/dashboard/recent-movements") {
         return jsonResponse(sampleRecent);
       }
-      if (url === "/api/dashboard/alerts") {
+      if (url.startsWith("/api/alerts")) {
         return jsonResponse(sampleAlerts);
       }
       return jsonResponse({ message: "Not found" }, false, 404);
