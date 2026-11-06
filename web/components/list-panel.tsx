@@ -1,5 +1,8 @@
-import { FilterIcon, SearchIcon } from "lucide-react";
-import type { ReactNode } from "react";
+"use client";
+
+import { SearchIcon } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useState, useTransition, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,44 +13,80 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "cn";
 
 type ListPanelProps = {
   title: string;
   totalCount: number;
   children: ReactNode;
-  searchPlaceholder?: string;
   page?: number;
   pageSize?: number;
-  onPageChange?: (page: number) => void;
-  searchValue?: string;
-  onSearchChange?: (value: string) => void;
-  onSearchSubmit?: () => void;
+  searchPlaceholder?: string;
+  /** Nome do query param de busca. Omitir desabilita a busca. */
+  searchParam?: string;
+  pageParam?: string;
 };
 
+// O estado da lista (página e busca) vive na URL; o painel apenas navega.
 export function ListPanel({
   title,
   totalCount,
   children,
-  searchPlaceholder = "Buscar...",
   page = 1,
   pageSize = 10,
-  onPageChange,
-  searchValue,
-  onSearchChange,
-  onSearchSubmit,
+  searchPlaceholder = "Buscar...",
+  searchParam,
+  pageParam = "page",
 }: ListPanelProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [searchInput, setSearchInput] = useState(
+    searchParam ? (searchParams.get(searchParam) ?? "") : "",
+  );
+
   const from = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, totalCount);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const searchEnabled =
-    searchValue !== undefined &&
-    onSearchChange !== undefined &&
-    onSearchSubmit !== undefined;
-  const canGoPrevious = onPageChange !== undefined && page > 1;
-  const canGoNext = onPageChange !== undefined && page < totalPages;
+  const searchEnabled = searchParam !== undefined;
+
+  function navigate(mutate: (params: URLSearchParams) => void) {
+    const next = new URLSearchParams(searchParams.toString());
+    mutate(next);
+    const query = next.toString();
+    startTransition(() => {
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    });
+  }
+
+  function goToPage(nextPage: number) {
+    navigate((params) => {
+      if (nextPage <= 1) {
+        params.delete(pageParam);
+      } else {
+        params.set(pageParam, String(nextPage));
+      }
+    });
+  }
+
+  function submitSearch() {
+    if (!searchParam) return;
+    const value = searchInput.trim();
+    navigate((params) => {
+      params.delete(pageParam);
+      if (value) {
+        params.set(searchParam, value);
+      } else {
+        params.delete(searchParam);
+      }
+    });
+  }
 
   return (
-    <Card className="gap-0 p-0">
+    <Card className="gap-0 p-0" aria-busy={isPending}>
       <CardHeader className="border-b-2 py-3 border-border [.border-b]:pb-(--card-spacing)">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -56,12 +95,12 @@ export function ListPanel({
               {totalCount} registros encontrados
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          {searchEnabled ? (
             <form
-              className="relative min-w-0 flex-1 sm:w-48 sm:flex-none"
+              className="relative min-w-0 sm:w-48"
               onSubmit={(event) => {
                 event.preventDefault();
-                onSearchSubmit?.();
+                submitSearch();
               }}
             >
               <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -70,25 +109,23 @@ export function ListPanel({
                 placeholder={searchPlaceholder}
                 className="h-8 pl-8"
                 aria-label={searchPlaceholder}
-                disabled={!searchEnabled}
-                value={searchEnabled ? searchValue : ""}
-                onChange={
-                  searchEnabled
-                    ? (event) => onSearchChange(event.target.value)
-                    : undefined
-                }
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
                 data-testid="list-panel-search"
               />
             </form>
-            <Button type="button" variant="outline" size="default" disabled>
-              <FilterIcon data-icon="inline-start" />
-              Filtrar
-            </Button>
-          </div>
+          ) : null}
         </div>
       </CardHeader>
 
-      <CardContent className="px-0">{children}</CardContent>
+      <CardContent
+        className={cn(
+          "px-0 transition-opacity",
+          isPending && "pointer-events-none opacity-60",
+        )}
+      >
+        {children}
+      </CardContent>
 
       <CardFooter className="justify-between gap-2">
         <p className="font-mono text-xs text-muted-foreground">
@@ -99,8 +136,8 @@ export function ListPanel({
             type="button"
             variant="outline"
             size="sm"
-            disabled={!canGoPrevious}
-            onClick={() => onPageChange?.(page - 1)}
+            disabled={page <= 1 || isPending}
+            onClick={() => goToPage(page - 1)}
             data-testid="list-panel-prev"
           >
             Anterior
@@ -112,8 +149,8 @@ export function ListPanel({
             type="button"
             variant="outline"
             size="sm"
-            disabled={!canGoNext}
-            onClick={() => onPageChange?.(page + 1)}
+            disabled={page >= totalPages || isPending}
+            onClick={() => goToPage(page + 1)}
             data-testid="list-panel-next"
           >
             Próximo
