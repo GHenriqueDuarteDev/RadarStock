@@ -1,14 +1,14 @@
-import type { UserRole } from "@radarstock/contracts";
+import { hasPermission } from "@radarstock/contracts";
 import { NextRequest, NextResponse } from "next/server";
-import { getRequiredRoles } from "@/app/_lib/route-access";
+import { getRequiredPermission } from "@/app/_lib/route-access";
 
 export async function requireRole(
   request: NextRequest,
   userId: string,
 ): Promise<NextResponse | null> {
-  const requiredRoles = getRequiredRoles(request.nextUrl.pathname);
+  const requiredPermission = getRequiredPermission(request.nextUrl.pathname);
 
-  if (!requiredRoles) {
+  if (!requiredPermission) {
     return null;
   }
 
@@ -27,7 +27,7 @@ export async function requireRole(
 
     const me = (await meResponse.json()) as { role?: string };
 
-    if (!me.role || !requiredRoles.includes(me.role as UserRole)) {
+    if (!hasPermission(me.role, requiredPermission)) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
