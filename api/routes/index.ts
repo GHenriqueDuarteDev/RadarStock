@@ -7,3 +7,4 @@ export { stockMovementRouter } from "./stock-movements-router";
 export { salesRouter } from "./sales-router";
 export { receiptsRouter } from "./receipts-router";
 export { inventoryCountsRouter } from "./inventory-counts-router";
+export { dashboardRouter } from "./dashboard-router";
