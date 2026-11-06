@@ -59,7 +59,7 @@ const items: NavItem[] = [
   { title: "Vendas", href: "/sales", icon: ShoppingCartIcon },
   { title: "Recebimentos", href: "/receipts", icon: TruckIcon },
   { title: "Inventário", href: "/inventory", icon: ClipboardListIcon },
-  { title: "Relatórios", icon: BarChart3Icon },
+  { title: "Relatórios", href: "/reports", icon: BarChart3Icon },
   { title: "Equipe", href: "/team", icon: UsersIcon },
 ];
 

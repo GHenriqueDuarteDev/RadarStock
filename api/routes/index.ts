@@ -8,5 +8,4 @@ export { salesRouter } from "./sales-router";
 export { receiptsRouter } from "./receipts-router";
 export { inventoryCountsRouter } from "./inventory-counts-router";
 export { dashboardRouter } from "./dashboard-router";
-export { alertsRouter } from "./alerts-router";
-export { alertRulesRouter } from "./alert-rules-router";
+export { reportsRouter } from "./reports-router";

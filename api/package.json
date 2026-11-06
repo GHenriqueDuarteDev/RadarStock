@@ -12,12 +12,15 @@
     "@prisma/client": "^7.10.1",
     "@radarstock/contracts": "file:../contracts",
     "dotenv": "^18.0.9",
+    "exceljs": "^4.4.0",
     "express": "^5.3.0",
+    "pdfkit": "^0.20.2",
     "pg": "^8.23.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
+    "@types/pdfkit": "^0.17.7",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "prisma": "^7.10.1",
