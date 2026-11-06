@@ -23,6 +23,7 @@ export const config = {
     "/warehouses/:path*",
     "/movements/:path*",
     "/sales/:path*",
+    "/receipts/:path*",
     "/team/:path*",
     "/settings/:path*",
   ],

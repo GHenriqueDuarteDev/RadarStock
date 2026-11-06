@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import { documentStatusSchema } from "./enums";
+import {
+  createPaginatedSchema,
+  paginationQuerySchema,
+} from "./pagination";
 
 export const receiptItemInputSchema = z.object({
   productId: z.string().min(1),
@@ -32,6 +36,8 @@ export const publicReceiptItemSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().positive(),
   unitCost: z.number().nonnegative(),
+  productName: z.string().min(1),
+  productSku: z.string().min(1),
 });
 
 export const publicReceiptSchema = z.object({
@@ -39,13 +45,30 @@ export const publicReceiptSchema = z.object({
   code: z.string().min(1),
   status: documentStatusSchema,
   warehouseId: z.string().min(1),
+  warehouseName: z.string().min(1),
   supplierName: z.string().nullable(),
+  totalCost: z.number().nonnegative(),
   receivedAt: z.coerce.date(),
   createdById: z.string().min(1),
+  createdByName: z.string().min(1),
   notes: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
-  items: z.array(publicReceiptItemSchema).optional(),
+  items: z.array(publicReceiptItemSchema),
+});
+
+export const listReceiptsQuerySchema = paginationQuerySchema.extend({
+  code: z.string().trim().min(1).optional(),
+});
+
+export const paginatedReceiptsSchema =
+  createPaginatedSchema(publicReceiptSchema);
+
+export const receiptsSummarySchema = z.object({
+  total: z.number().int().nonnegative(),
+  confirmed: z.number().int().nonnegative(),
+  cancelled: z.number().int().nonnegative(),
+  totalCost: z.number().nonnegative(),
 });
 
 export type ReceiptItemInput = z.infer<typeof receiptItemInputSchema>;
@@ -53,3 +76,6 @@ export type ReceiptInput = z.infer<typeof receiptInputSchema>;
 export type UpdateReceiptInput = z.infer<typeof updateReceiptInputSchema>;
 export type PublicReceiptItem = z.infer<typeof publicReceiptItemSchema>;
 export type PublicReceipt = z.infer<typeof publicReceiptSchema>;
+export type ListReceiptsQuery = z.infer<typeof listReceiptsQuerySchema>;
+export type PaginatedReceipts = z.infer<typeof paginatedReceiptsSchema>;
+export type ReceiptsSummary = z.infer<typeof receiptsSummarySchema>;
