@@ -10,6 +10,13 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
+function daysAgoDate(daysAgo: number) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() - daysAgo);
+  return date;
+}
+
 const seedCategories = [
   {
     name: "Geral",
@@ -722,32 +729,163 @@ async function main() {
     fromCode?: string;
     toCode?: string;
     note: string;
+    daysAgo: number;
   };
 
-  const seedMovements: SeedMovement[] = [
-    { type: "in", productIndex: 0, quantity: 100, toCode: "GAL-001", note: "Entrada inicial" },
-    { type: "in", productIndex: 1, quantity: 80, toCode: "GAL-001", note: "Recebimento de fornecedor" },
-    { type: "in", productIndex: 2, quantity: 60, toCode: "GAL-002", note: "Entrada galpão norte" },
-    { type: "in", productIndex: 3, quantity: 50, toCode: "GAL-002", note: "Reposição estoque" },
-    { type: "in", productIndex: 4, quantity: 40, toCode: "GAL-003", note: "Entrada sul" },
-    { type: "in", productIndex: 5, quantity: 70, toCode: "GAL-001", note: "Compra programada" },
-    { type: "in", productIndex: 6, quantity: 55, toCode: "GAL-003", note: "Entrada luminárias" },
-    { type: "in", productIndex: 7, quantity: 90, toCode: "GAL-004", note: "Entrada periféricos" },
-    { type: "transfer", productIndex: 0, quantity: 20, fromCode: "GAL-001", toCode: "GAL-002", note: "Transferência para norte" },
-    { type: "transfer", productIndex: 1, quantity: 15, fromCode: "GAL-001", toCode: "GAL-003", note: "Balanceamento sul" },
-    { type: "transfer", productIndex: 7, quantity: 10, fromCode: "GAL-004", toCode: "GAL-001", note: "Centralização" },
-    { type: "out", productIndex: 0, quantity: 12, fromCode: "GAL-001", note: "Saída para venda" },
-    { type: "out", productIndex: 2, quantity: 8, fromCode: "GAL-002", note: "Consumo interno" },
-    { type: "out", productIndex: 5, quantity: 5, fromCode: "GAL-001", note: "Baixa operacional" },
-    { type: "out", productIndex: 7, quantity: 6, fromCode: "GAL-004", note: "Expedição" },
-    { type: "adjustment", productIndex: 3, quantity: 4, toCode: "GAL-002", note: "Ajuste inventário (+)" },
-    { type: "adjustment", productIndex: 4, quantity: 2, fromCode: "GAL-003", note: "Ajuste inventário (-)" },
-    { type: "in", productIndex: 8, quantity: 45, toCode: "GAL-005", note: "Entrada oeste" },
-    { type: "in", productIndex: 9, quantity: 35, toCode: "GAL-001", note: "Entrada cabos" },
-    { type: "transfer", productIndex: 8, quantity: 10, fromCode: "GAL-005", toCode: "GAL-001", note: "Transferência oeste→central" },
-    { type: "out", productIndex: 9, quantity: 7, fromCode: "GAL-001", note: "Saída cabos" },
-    { type: "adjustment", productIndex: 1, quantity: 3, toCode: "GAL-001", note: "Correção contagem" },
+  const warehouseCodes = [
+    "GAL-001",
+    "GAL-002",
+    "GAL-003",
+    "GAL-004",
+    "GAL-005",
+  ] as const;
+
+  const productWarehousePairs: Array<{
+    productIndex: number;
+    warehouseCode: (typeof warehouseCodes)[number];
+  }> = [
+    { productIndex: 0, warehouseCode: "GAL-001" },
+    { productIndex: 1, warehouseCode: "GAL-001" },
+    { productIndex: 2, warehouseCode: "GAL-002" },
+    { productIndex: 3, warehouseCode: "GAL-002" },
+    { productIndex: 4, warehouseCode: "GAL-003" },
+    { productIndex: 5, warehouseCode: "GAL-001" },
+    { productIndex: 6, warehouseCode: "GAL-003" },
+    { productIndex: 7, warehouseCode: "GAL-004" },
+    { productIndex: 8, warehouseCode: "GAL-005" },
+    { productIndex: 9, warehouseCode: "GAL-001" },
   ];
+
+  const seedMovements: SeedMovement[] = [];
+
+  // Estoque base no início da janela de 90 dias (entradas grandes).
+  for (const [index, pair] of productWarehousePairs.entries()) {
+    seedMovements.push({
+      type: "in",
+      productIndex: pair.productIndex,
+      quantity: 120 + index * 8,
+      toCode: pair.warehouseCode,
+      note: `Entrada inicial ${pair.warehouseCode}`,
+      daysAgo: 89 - (index % 5),
+    });
+  }
+
+  // Série diária: entradas e saídas espalhadas para enriquecer 7d/30d/90d.
+  for (let daysAgo = 88; daysAgo >= 0; daysAgo -= 1) {
+    const pair =
+      productWarehousePairs[daysAgo % productWarehousePairs.length]!;
+    const secondary =
+      productWarehousePairs[(daysAgo + 3) % productWarehousePairs.length]!;
+
+    if (daysAgo % 2 === 0) {
+      seedMovements.push({
+        type: "in",
+        productIndex: pair.productIndex,
+        quantity: 8 + (daysAgo % 7) * 2,
+        toCode: pair.warehouseCode,
+        note: `Reposição D-${daysAgo}`,
+        daysAgo,
+      });
+    }
+
+    if (daysAgo % 3 === 0) {
+      seedMovements.push({
+        type: "out",
+        productIndex: pair.productIndex,
+        quantity: 2 + (daysAgo % 5),
+        fromCode: pair.warehouseCode,
+        note: `Saída operacional D-${daysAgo}`,
+        daysAgo,
+      });
+    }
+
+    if (daysAgo % 11 === 0) {
+      seedMovements.push({
+        type: "in",
+        productIndex: secondary.productIndex,
+        quantity: 15 + (daysAgo % 4),
+        toCode: secondary.warehouseCode,
+        note: `Compra programada D-${daysAgo}`,
+        daysAgo,
+      });
+    }
+
+    if (daysAgo % 13 === 0 && daysAgo > 0) {
+      seedMovements.push({
+        type: "out",
+        productIndex: secondary.productIndex,
+        quantity: 3 + (daysAgo % 3),
+        fromCode: secondary.warehouseCode,
+        note: `Expedição D-${daysAgo}`,
+        daysAgo,
+      });
+    }
+  }
+
+  seedMovements.push(
+    {
+      type: "transfer",
+      productIndex: 0,
+      quantity: 20,
+      fromCode: "GAL-001",
+      toCode: "GAL-002",
+      note: "Transferência para norte",
+      daysAgo: 70,
+    },
+    {
+      type: "transfer",
+      productIndex: 1,
+      quantity: 15,
+      fromCode: "GAL-001",
+      toCode: "GAL-003",
+      note: "Balanceamento sul",
+      daysAgo: 45,
+    },
+    {
+      type: "transfer",
+      productIndex: 7,
+      quantity: 10,
+      fromCode: "GAL-004",
+      toCode: "GAL-001",
+      note: "Centralização",
+      daysAgo: 20,
+    },
+    {
+      type: "transfer",
+      productIndex: 8,
+      quantity: 10,
+      fromCode: "GAL-005",
+      toCode: "GAL-001",
+      note: "Transferência oeste→central",
+      daysAgo: 12,
+    },
+    {
+      type: "adjustment",
+      productIndex: 3,
+      quantity: 4,
+      toCode: "GAL-002",
+      note: "Ajuste inventário (+)",
+      daysAgo: 35,
+    },
+    {
+      type: "adjustment",
+      productIndex: 4,
+      quantity: 2,
+      fromCode: "GAL-003",
+      note: "Ajuste inventário (-)",
+      daysAgo: 18,
+    },
+    {
+      type: "adjustment",
+      productIndex: 1,
+      quantity: 3,
+      toCode: "GAL-001",
+      note: "Correção contagem",
+      daysAgo: 5,
+    },
+  );
+
+  seedMovements.sort((a, b) => b.daysAgo - a.daysAgo);
 
   const warehouseByCode = new Map(
     warehouses.map((warehouse) => [warehouse.code, warehouse]),
@@ -844,11 +982,14 @@ async function main() {
         note: movement.note,
         referenceType: "manual",
         referenceId: null,
+        createdAt: daysAgoDate(movement.daysAgo),
       },
     });
   }
 
   console.log(`Movement seed ok: ${seedMovements.length} movements`);
+
+  const saleStockBoostDaysAgo = 62;
 
   const saleStockBoosts: Array<{
     productIndex: number;
@@ -882,6 +1023,7 @@ async function main() {
         note: "Entrada preparatória para seed de vendas",
         referenceType: "manual",
         referenceId: null,
+        createdAt: daysAgoDate(saleStockBoostDaysAgo),
       },
     });
   }
@@ -890,6 +1032,7 @@ async function main() {
     code: string;
     warehouseCode: string;
     cancel: boolean;
+    daysAgo: number;
     items: Array<{ productIndex: number; quantity: number; unitPrice: number }>;
   };
 
@@ -902,8 +1045,8 @@ async function main() {
   const seedSales: SeedSale[] = Array.from({ length: 22 }, (_, index) => {
     const n = index + 1;
     const code = `VEN-${String(n).padStart(3, "0")}`;
-    const warehouseCodes = ["GAL-001", "GAL-002", "GAL-004"] as const;
-    const warehouseCode = warehouseCodes[index % warehouseCodes.length];
+    const saleWarehouseCodes = ["GAL-001", "GAL-002", "GAL-004"] as const;
+    const warehouseCode = saleWarehouseCodes[index % saleWarehouseCodes.length];
     const availableProducts = productsByWarehouse[warehouseCode] ?? [0];
     const productIndex = availableProducts[index % availableProducts.length]!;
     const secondProductIndex =
@@ -913,6 +1056,8 @@ async function main() {
       code,
       warehouseCode,
       cancel: n > 18,
+      // Espalha vendas pelos últimos ~60 dias (após o boost preparatório).
+      daysAgo: 60 - index * 2,
       items: [
         {
           productIndex,
@@ -930,9 +1075,9 @@ async function main() {
           : []),
       ],
     };
-  });
+  }).sort((a, b) => b.daysAgo - a.daysAgo);
 
-  for (const [saleIndex, seedSale] of seedSales.entries()) {
+  for (const seedSale of seedSales) {
     const warehouse = warehouseByCode.get(seedSale.warehouseCode);
     if (!warehouse) {
       throw new Error(`Galpão não encontrado para venda ${seedSale.code}`);
@@ -956,6 +1101,7 @@ async function main() {
       (sum, item) => sum + item.quantity * item.unitPrice,
       0,
     );
+    const soldAt = daysAgoDate(seedSale.daysAgo);
 
     for (const item of items) {
       await applySeedDecrement(item.product.id, warehouse.id, item.quantity);
@@ -967,7 +1113,7 @@ async function main() {
         status: "confirmed",
         warehouseId: warehouse.id,
         totalAmount,
-        soldAt: new Date(2026, 0, Math.min(saleIndex + 1, 28)),
+        soldAt,
         createdById: adminUser.id,
         notes: `Seed ${seedSale.code}`,
         items: {
@@ -993,6 +1139,7 @@ async function main() {
           note: `Venda ${sale.code}`,
           referenceType: "sale",
           referenceId: sale.id,
+          createdAt: soldAt,
         },
       });
     }
@@ -1016,6 +1163,7 @@ async function main() {
             note: `Estorno venda ${sale.code}`,
             referenceType: "sale",
             referenceId: sale.id,
+            createdAt: soldAt,
           },
         });
       }
@@ -1029,6 +1177,7 @@ async function main() {
     warehouseCode: string;
     supplierName: string;
     cancel: boolean;
+    daysAgo: number;
     items: Array<{ productIndex: number; quantity: number; unitCost: number }>;
   };
 
@@ -1042,8 +1191,14 @@ async function main() {
   const seedReceipts: SeedReceipt[] = Array.from({ length: 22 }, (_, index) => {
     const n = index + 1;
     const code = `REC-${String(n).padStart(3, "0")}`;
-    const warehouseCodes = ["GAL-001", "GAL-002", "GAL-003", "GAL-004"] as const;
-    const warehouseCode = warehouseCodes[index % warehouseCodes.length];
+    const receiptWarehouseCodes = [
+      "GAL-001",
+      "GAL-002",
+      "GAL-003",
+      "GAL-004",
+    ] as const;
+    const warehouseCode =
+      receiptWarehouseCodes[index % receiptWarehouseCodes.length];
     const availableProducts = receiptProductsByWarehouse[warehouseCode] ?? [0];
     const productIndex = availableProducts[index % availableProducts.length]!;
     const secondProductIndex =
@@ -1054,6 +1209,8 @@ async function main() {
       warehouseCode,
       supplierName: `Fornecedor ${String.fromCharCode(65 + (index % 5))}`,
       cancel: n > 18,
+      // Espalha recebimentos pelos últimos ~66 dias.
+      daysAgo: 66 - index * 3,
       items: [
         {
           productIndex,
@@ -1071,9 +1228,9 @@ async function main() {
           : []),
       ],
     };
-  });
+  }).sort((a, b) => b.daysAgo - a.daysAgo);
 
-  for (const [receiptIndex, seedReceipt] of seedReceipts.entries()) {
+  for (const seedReceipt of seedReceipts) {
     const warehouse = warehouseByCode.get(seedReceipt.warehouseCode);
     if (!warehouse) {
       throw new Error(
@@ -1095,6 +1252,8 @@ async function main() {
       };
     });
 
+    const receivedAt = daysAgoDate(seedReceipt.daysAgo);
+
     for (const item of items) {
       await applySeedIncrement(item.product.id, warehouse.id, item.quantity);
     }
@@ -1105,7 +1264,7 @@ async function main() {
         status: "confirmed",
         warehouseId: warehouse.id,
         supplierName: seedReceipt.supplierName,
-        receivedAt: new Date(2026, 1, Math.min(receiptIndex + 1, 28)),
+        receivedAt,
         createdById: adminUser.id,
         notes: `Seed ${seedReceipt.code}`,
         items: {
@@ -1131,6 +1290,7 @@ async function main() {
           note: `Recebimento ${receipt.code}`,
           referenceType: "receipt",
           referenceId: receipt.id,
+          createdAt: receivedAt,
         },
       });
     }
@@ -1154,6 +1314,7 @@ async function main() {
             note: `Estorno recebimento ${receipt.code}`,
             referenceType: "receipt",
             referenceId: receipt.id,
+            createdAt: receivedAt,
           },
         });
       }
