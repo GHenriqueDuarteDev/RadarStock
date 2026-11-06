@@ -18,6 +18,10 @@ type ListPanelProps = {
   searchPlaceholder?: string;
   page?: number;
   pageSize?: number;
+  onPageChange?: (page: number) => void;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  onSearchSubmit?: () => void;
 };
 
 export function ListPanel({
@@ -27,9 +31,20 @@ export function ListPanel({
   searchPlaceholder = "Buscar...",
   page = 1,
   pageSize = 10,
+  onPageChange,
+  searchValue,
+  onSearchChange,
+  onSearchSubmit,
 }: ListPanelProps) {
   const from = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, totalCount);
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const searchEnabled =
+    searchValue !== undefined &&
+    onSearchChange !== undefined &&
+    onSearchSubmit !== undefined;
+  const canGoPrevious = onPageChange !== undefined && page > 1;
+  const canGoNext = onPageChange !== undefined && page < totalPages;
 
   return (
     <Card className="gap-0 p-0">
@@ -42,16 +57,29 @@ export function ListPanel({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative min-w-0 flex-1 sm:w-48 sm:flex-none">
+            <form
+              className="relative min-w-0 flex-1 sm:w-48 sm:flex-none"
+              onSubmit={(event) => {
+                event.preventDefault();
+                onSearchSubmit?.();
+              }}
+            >
               <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder={searchPlaceholder}
                 className="h-8 pl-8"
                 aria-label={searchPlaceholder}
-                disabled
+                disabled={!searchEnabled}
+                value={searchEnabled ? searchValue : ""}
+                onChange={
+                  searchEnabled
+                    ? (event) => onSearchChange(event.target.value)
+                    : undefined
+                }
+                data-testid="list-panel-search"
               />
-            </div>
+            </form>
             <Button type="button" variant="outline" size="default" disabled>
               <FilterIcon data-icon="inline-start" />
               Filtrar
@@ -67,13 +95,27 @@ export function ListPanel({
           Mostrando {from}-{to} de {totalCount}
         </p>
         <div className="flex items-center gap-1">
-          <Button type="button" variant="outline" size="sm" disabled>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!canGoPrevious}
+            onClick={() => onPageChange?.(page - 1)}
+            data-testid="list-panel-prev"
+          >
             Anterior
           </Button>
           <Button type="button" variant="outline" size="sm" disabled>
             {page}
           </Button>
-          <Button type="button" variant="outline" size="sm" disabled>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!canGoNext}
+            onClick={() => onPageChange?.(page + 1)}
+            data-testid="list-panel-next"
+          >
             Próximo
           </Button>
         </div>

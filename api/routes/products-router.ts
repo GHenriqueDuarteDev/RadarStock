@@ -4,7 +4,12 @@ import { requireInternalUser } from "../middlewares/auth-middleware";
 
 const productRouter = Router();
 
-productRouter.get("/", requireInternalUser, productController.getAllProducts);
+productRouter.get("/", requireInternalUser, productController.listProducts);
+productRouter.get(
+  "/summary",
+  requireInternalUser,
+  productController.getSummary,
+);
 productRouter.get(
   "/:id",
   requireInternalUser,

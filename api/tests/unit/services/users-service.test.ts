@@ -1,21 +1,32 @@
 import { describe, beforeEach, it, vi, expect } from "vitest";
 
-const { findManyMock, findUniqueMock, updateMock, createMock, hashMock } =
-  vi.hoisted(() => ({
-    findManyMock: vi.fn(),
-    findUniqueMock: vi.fn(),
-    updateMock: vi.fn(),
-    createMock: vi.fn(),
-    hashMock: vi.fn(),
-  }));
+const {
+  findManyMock,
+  findUniqueMock,
+  updateMock,
+  createMock,
+  hashMock,
+  countMock,
+  transactionMock,
+} = vi.hoisted(() => ({
+  findManyMock: vi.fn(),
+  findUniqueMock: vi.fn(),
+  updateMock: vi.fn(),
+  createMock: vi.fn(),
+  hashMock: vi.fn(),
+  countMock: vi.fn(),
+  transactionMock: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
+}));
 
 vi.mock("../../../src/db", () => ({
   prisma: {
+    $transaction: transactionMock,
     user: {
       findMany: findManyMock,
       findUnique: findUniqueMock,
       update: updateMock,
       create: createMock,
+      count: countMock,
     },
   },
 }));
@@ -128,30 +139,135 @@ describe("userService.createByAdmin", () => {
   });
 });
 
-describe("userService.getAllUsers", () => {
+describe("userService.listUsers", () => {
   beforeEach(() => {
     findManyMock.mockReset();
+    countMock.mockReset();
+    transactionMock.mockClear();
   });
 
-  it("returns 200 with users list", async () => {
+  it("returns 200 with paginated users", async () => {
     findManyMock.mockResolvedValue([publicUser]);
+    countMock.mockResolvedValue(1);
 
-    const result = await userService.getAllUsers();
+    const result = await userService.listUsers(1);
 
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {},
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: "desc" },
+      }),
+    );
     expect(result).toEqual({
       status: 200,
-      data: [publicUser],
+      data: {
+        items: [publicUser],
+        total: 1,
+        page: 1,
+        pageSize: 10,
+      },
     });
   });
 
   it("returns 200 with empty list when there are no users", async () => {
     findManyMock.mockResolvedValue([]);
+    countMock.mockResolvedValue(0);
 
-    const result = await userService.getAllUsers();
+    const result = await userService.listUsers(1);
 
     expect(result).toEqual({
       status: 200,
-      data: [],
+      data: {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+      },
+    });
+  });
+
+  it("applies skip for page 2", async () => {
+    findManyMock.mockResolvedValue([]);
+    countMock.mockResolvedValue(15);
+
+    await userService.listUsers(2);
+
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 10,
+        take: 10,
+      }),
+    );
+  });
+
+  it("filters by firstName or lastName when name is provided", async () => {
+    findManyMock.mockResolvedValue([publicUser]);
+    countMock.mockResolvedValue(1);
+
+    await userService.listUsers(1, "Ana");
+
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { firstName: { contains: "Ana", mode: "insensitive" } },
+            { lastName: { contains: "Ana", mode: "insensitive" } },
+          ],
+        },
+      }),
+    );
+    expect(countMock).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { firstName: { contains: "Ana", mode: "insensitive" } },
+          { lastName: { contains: "Ana", mode: "insensitive" } },
+        ],
+      },
+    });
+  });
+});
+
+describe("userService.getSummary", () => {
+  beforeEach(() => {
+    countMock.mockReset();
+    transactionMock.mockClear();
+  });
+
+  it("returns 200 with global user metrics", async () => {
+    countMock
+      .mockResolvedValueOnce(10)
+      .mockResolvedValueOnce(7)
+      .mockResolvedValueOnce(3)
+      .mockResolvedValueOnce(2);
+
+    const result = await userService.getSummary();
+
+    expect(result).toEqual({
+      status: 200,
+      data: {
+        total: 10,
+        active: 7,
+        inactive: 3,
+        admins: 2,
+      },
+    });
+  });
+
+  it("returns zeros when there are no users", async () => {
+    countMock.mockResolvedValue(0);
+
+    const result = await userService.getSummary();
+
+    expect(result).toEqual({
+      status: 200,
+      data: {
+        total: 0,
+        active: 0,
+        inactive: 0,
+        admins: 0,
+      },
     });
   });
 });

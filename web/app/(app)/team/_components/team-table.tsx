@@ -1,9 +1,14 @@
 "use client";
 
 import { MoreHorizontalIcon } from "lucide-react";
-import type { PublicUserRecord, UserRole, UserStatus } from "@radarstock/contracts";
+import type {
+  PublicUserRecord,
+  UserRole,
+  UserStatus,
+} from "@radarstock/contracts";
 
 import { ListPanel } from "@/components/list-panel";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,21 +30,23 @@ const statusLabel: Record<UserStatus, string> = {
   inactive: "Inativo",
 };
 
-const statusClassName: Record<UserStatus, string> = {
-  active: "bg-success/15 text-success",
-  inactive: "bg-critical/15 text-critical",
-};
-
-const roleClassName: Record<UserRole, string> = {
-  admin: "bg-primary/15 text-primary",
-  manager: "bg-warning/20 text-warning-foreground",
-  operator: "bg-muted text-foreground",
-  viewer: "bg-muted text-muted-foreground",
-};
+const roleVariant = {
+  admin: "primary",
+  manager: "warning",
+  operator: "default",
+  viewer: "default",
+} as const;
 
 type TeamTableProps = {
   data?: PublicUserRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  searchValue: string;
   currentUserId?: string | null;
+  onPageChange: (page: number) => void;
+  onSearchChange: (value: string) => void;
+  onSearchSubmit: () => void;
   onEdit?: (user: PublicUserRecord) => void;
   onChangeRole?: (user: PublicUserRecord) => void;
   onDelete?: (user: PublicUserRecord) => void;
@@ -66,11 +73,9 @@ function StatusBadge({ status }: { status: UserStatus | null }) {
   }
 
   return (
-    <span
-      className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${statusClassName[status]}`}
-    >
+    <Badge variant={status === "active" ? "success" : "destructive"}>
       {statusLabel[status]}
-    </span>
+    </Badge>
   );
 }
 
@@ -83,18 +88,19 @@ function RoleBadge({ role }: { role: UserRole | null }) {
     );
   }
 
-  return (
-    <span
-      className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${roleClassName[role]}`}
-    >
-      {roleLabel[role]}
-    </span>
-  );
+  return <Badge variant={roleVariant[role]}>{roleLabel[role]}</Badge>;
 }
 
 export function TeamTable({
   data = [],
+  total,
+  page,
+  pageSize,
+  searchValue,
   currentUserId = null,
+  onPageChange,
+  onSearchChange,
+  onSearchSubmit,
   onEdit,
   onChangeRole,
   onDelete,
@@ -102,8 +108,14 @@ export function TeamTable({
   return (
     <ListPanel
       title="Lista de membros"
-      totalCount={data.length}
+      totalCount={total}
+      page={page}
+      pageSize={pageSize}
+      onPageChange={onPageChange}
       searchPlaceholder="Buscar membro..."
+      searchValue={searchValue}
+      onSearchChange={onSearchChange}
+      onSearchSubmit={onSearchSubmit}
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -171,13 +183,13 @@ export function TeamTable({
                       </p>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 text-center">
                     <RoleBadge role={user.role} />
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 text-center">
                     <StatusBadge status={user.status} />
                   </td>
-                  <td className="px-4 py-3 text-right font-mono">
+                  <td className="px-4 py-3 text-center font-mono">
                     {formatCreatedAt(user.createdAt)}
                   </td>
                   <td className="px-4 py-3 text-right">

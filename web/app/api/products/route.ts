@@ -1,27 +1,50 @@
 import { requireApiSession, proxyToApi } from "@/app/_lib/api";
 import {
+  listProductsQuerySchema,
+  paginatedProductsSchema,
   productInputSchema,
   publicProductSchema,
 } from "@radarstock/contracts";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
-const productsListSchema = z.array(publicProductSchema);
-
-export async function GET() {
+export async function GET(request: Request) {
   const session = await requireApiSession();
   if (session instanceof NextResponse) {
     return session;
   }
 
-  const apiResponse = await proxyToApi("/products", session.userId);
+  const url = new URL(request.url);
+  const parsed = listProductsQuerySchema.safeParse({
+    page: url.searchParams.get("page") ?? undefined,
+    name: url.searchParams.get("name") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { message: "Parâmetros de listagem inválidos." },
+      { status: 400 },
+    );
+  }
+
+  const query = new URLSearchParams({
+    page: String(parsed.data.page),
+  });
+
+  if (parsed.data.name) {
+    query.set("name", parsed.data.name);
+  }
+
+  const apiResponse = await proxyToApi(
+    `/products?${query.toString()}`,
+    session.userId,
+  );
   const data = await apiResponse.json();
 
   if (!apiResponse.ok) {
     return NextResponse.json(data, { status: apiResponse.status });
   }
 
-  const products = productsListSchema.parse(data);
+  const products = paginatedProductsSchema.parse(data);
   return NextResponse.json(products);
 }
 

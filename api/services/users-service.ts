@@ -1,8 +1,9 @@
 import { hash } from "@node-rs/argon2";
-import type {
-  AdminCreateUser,
-  UserInput,
-  UserRole,
+import {
+  PAGE_SIZE,
+  type AdminCreateUser,
+  type UserInput,
+  type UserRole,
 } from "@radarstock/contracts";
 import { prisma } from "../src/db";
 
@@ -76,12 +77,47 @@ async function createByAdmin(input: AdminCreateUser) {
   }
 }
 
-async function getAllUsers() {
-  const users = await prisma.user.findMany({
-    select: publicUserSelect,
-  });
+async function listUsers(page: number, name?: string) {
+  const skip = (page - 1) * PAGE_SIZE;
 
-  return { status: 200, data: users };
+  const where = name
+    ? {
+        OR: [
+          { firstName: { contains: name, mode: "insensitive" as const } },
+          { lastName: { contains: name, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
+  const [items, total] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      select: publicUserSelect,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: PAGE_SIZE,
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    status: 200,
+    data: { items, total, page, pageSize: PAGE_SIZE },
+  };
+}
+
+async function getSummary() {
+  const [total, active, inactive, admins] = await prisma.$transaction([
+    prisma.user.count(),
+    prisma.user.count({ where: { status: "active" } }),
+    prisma.user.count({ where: { status: "inactive" } }),
+    prisma.user.count({ where: { role: "admin" } }),
+  ]);
+
+  return {
+    status: 200,
+    data: { total, active, inactive, admins },
+  };
 }
 
 async function getUserById(id: string) {
@@ -254,7 +290,8 @@ async function deleteUserById(id: string, actorId: string) {
 export const userService = {
   registerUser,
   createByAdmin,
-  getAllUsers,
+  listUsers,
+  getSummary,
   getUserById,
   updateUserById,
   updateUserRole,

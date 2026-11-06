@@ -1,12 +1,26 @@
 import {
+  listProductsQuerySchema,
   productInputSchema,
   updateProductInputSchema,
 } from "@radarstock/contracts";
 import { productService } from "../services";
 import type { Request, Response } from "express";
 
-async function getAllProducts(_req: Request, res: Response) {
-  const { status, data } = await productService.getAllProducts();
+async function listProducts(req: Request, res: Response) {
+  const parsed = listProductsQuerySchema.safeParse(req.query);
+
+  if (!parsed.success) {
+    res.status(400).json({ message: "Parâmetros de listagem inválidos." });
+    return;
+  }
+
+  const { page, name } = parsed.data;
+  const { status, data } = await productService.listProducts(page, name);
+  res.status(status).json(data);
+}
+
+async function getSummary(_req: Request, res: Response) {
+  const { status, data } = await productService.getSummary();
   res.status(status).json(data);
 }
 
@@ -74,7 +88,8 @@ async function deleteProductById(req: Request, res: Response) {
 }
 
 export const productController = {
-  getAllProducts,
+  listProducts,
+  getSummary,
   getProductById,
   createProduct,
   updateProductById,

@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  PAGE_SIZE,
+  paginatedProductsSchema,
+  productsSummarySchema,
   publicCategorySchema,
-  publicProductSchema,
   type PublicCategory,
   type PublicProduct,
 } from "@radarstock/contracts";
@@ -19,7 +21,6 @@ import { EditProductSheet } from "./edit-product-sheet";
 import { ProductsMetrics, type ProductsMetricsData } from "./products-metrics";
 import { ProductsTable } from "./products-table";
 
-const productsListSchema = z.array(publicProductSchema);
 const categoriesListSchema = z.array(publicCategorySchema);
 
 type ProductsSheet =
@@ -27,19 +28,6 @@ type ProductsSheet =
   | { type: "edit"; product: PublicProduct }
   | { type: "delete"; product: PublicProduct }
   | null;
-
-function computeMetrics(
-  products: PublicProduct[],
-  categoriesCount: number,
-): ProductsMetricsData {
-  return {
-    total: products.length,
-    active: products.filter((product) => product.status === "active").length,
-    inactive: products.filter((product) => product.status === "inactive")
-      .length,
-    categories: categoriesCount,
-  };
-}
 
 async function readErrorMessage(response: Response) {
   try {
@@ -50,38 +38,62 @@ async function readErrorMessage(response: Response) {
   }
 }
 
+function buildProductsQuery(page: number, name: string) {
+  const query = new URLSearchParams({ page: String(page) });
+  const trimmedName = name.trim();
+  if (trimmedName !== "") {
+    query.set("name", trimmedName);
+  }
+  return query.toString();
+}
+
 export function ProductsView() {
   const [products, setProducts] = useState<PublicProduct[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedName, setAppliedName] = useState("");
+  const [metrics, setMetrics] = useState<ProductsMetricsData | null>(null);
   const [categories, setCategories] = useState<PublicCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sheet, setSheet] = useState<ProductsSheet>(null);
 
-  const loadData = useCallback(async () => {
+  const loadProducts = useCallback(async (nextPage: number, name: string) => {
     setLoadError(null);
-
-    const [productsResponse, categoriesResponse] = await Promise.all([
-      fetch("/api/products"),
-      fetch("/api/categories"),
-    ]);
-
-    if (!productsResponse.ok) {
-      throw new Error(await readErrorMessage(productsResponse));
-    }
-    if (!categoriesResponse.ok) {
-      throw new Error(await readErrorMessage(categoriesResponse));
-    }
-
-    const productsData = productsListSchema.parse(
-      await productsResponse.json(),
+    const response = await fetch(
+      `/api/products?${buildProductsQuery(nextPage, name)}`,
     );
-    const categoriesData = categoriesListSchema.parse(
-      await categoriesResponse.json(),
-    );
-
-    setProducts(productsData);
-    setCategories(categoriesData);
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+    const data = paginatedProductsSchema.parse(await response.json());
+    setProducts(data.items);
+    setTotal(data.total);
+    setPage(data.page);
   }, []);
+
+  const loadSummary = useCallback(async () => {
+    const response = await fetch("/api/products/summary");
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+    const data = productsSummarySchema.parse(await response.json());
+    setMetrics(data);
+  }, []);
+
+  const loadCategories = useCallback(async () => {
+    const response = await fetch("/api/categories");
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+    const data = categoriesListSchema.parse(await response.json());
+    setCategories(data);
+  }, []);
+
+  const refreshAfterMutation = useCallback(async () => {
+    await Promise.all([loadProducts(page, appliedName), loadSummary()]);
+  }, [appliedName, loadProducts, loadSummary, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +101,11 @@ export function ProductsView() {
     async function initialLoad() {
       setLoading(true);
       try {
-        await loadData();
+        await Promise.all([
+          loadProducts(1, ""),
+          loadSummary(),
+          loadCategories(),
+        ]);
       } catch (err) {
         if (!cancelled) {
           setLoadError(
@@ -108,36 +124,47 @@ export function ProductsView() {
     return () => {
       cancelled = true;
     };
-  }, [loadData]);
+  }, [loadCategories, loadProducts, loadSummary]);
 
-  const metrics = useMemo(
-    () => computeMetrics(products, categories.length),
-    [products, categories.length],
-  );
-
-  function handleCreated(created: PublicProduct) {
-    setProducts((current) => [created, ...current]);
-    setSheet(null);
+  async function handlePageChange(nextPage: number) {
+    try {
+      await loadProducts(nextPage, appliedName);
+    } catch (err) {
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível carregar os produtos.",
+      );
+    }
   }
 
-  function handleSaved(updated: PublicProduct) {
-    setProducts((current) =>
-      current.map((product) =>
-        product.id === updated.id ? updated : product,
-      ),
-    );
-    setSheet(null);
+  async function handleSearchSubmit() {
+    const nextName = searchInput.trim();
+    setAppliedName(nextName);
+    try {
+      await loadProducts(1, nextName);
+    } catch (err) {
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível carregar os produtos.",
+      );
+    }
   }
 
-  function handleDeleted(id: string) {
-    setProducts((current) =>
-      current.map((product) =>
-        product.id === id
-          ? { ...product, status: "inactive" as const }
-          : product,
-      ),
-    );
+  async function handleCreated(_created: PublicProduct) {
     setSheet(null);
+    await refreshAfterMutation();
+  }
+
+  async function handleSaved(_updated: PublicProduct) {
+    setSheet(null);
+    await refreshAfterMutation();
+  }
+
+  async function handleDeleted(_id: string) {
+    setSheet(null);
+    await refreshAfterMutation();
   }
 
   return (
@@ -172,10 +199,14 @@ export function ProductsView() {
         <>
           <ProductsMetrics data={metrics} />
           <ProductsTable
-            data={products.map((product) => ({
-              ...product,
-              stockQuantity: null,
-            }))}
+            data={products}
+            total={total}
+            page={page}
+            pageSize={PAGE_SIZE}
+            searchValue={searchInput}
+            onPageChange={handlePageChange}
+            onSearchChange={setSearchInput}
+            onSearchSubmit={handleSearchSubmit}
             onEdit={(product) => setSheet({ type: "edit", product })}
             onDelete={(product) => setSheet({ type: "delete", product })}
           />

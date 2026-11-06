@@ -1,6 +1,7 @@
-import type {
-  ProductInput,
-  UpdateProductInput,
+import {
+  PAGE_SIZE,
+  type ProductInput,
+  type UpdateProductInput,
 } from "@radarstock/contracts";
 import { prisma } from "../src/db";
 
@@ -9,6 +10,11 @@ const publicProductInclude = {
     select: {
       id: true,
       name: true,
+    },
+  },
+  stockBalances: {
+    select: {
+      quantity: true,
     },
   },
 } as const;
@@ -27,6 +33,7 @@ type ProductWithCategory = {
   createdAt: Date;
   updatedAt: Date;
   category: { id: string; name: string };
+  stockBalances: { quantity: number }[];
 };
 
 function toPublicProduct(product: ProductWithCategory) {
@@ -41,21 +48,55 @@ function toPublicProduct(product: ProductWithCategory) {
     cost: Number(product.cost),
     salePrice: Number(product.salePrice),
     minStock: product.minStock,
+    stockQuantity: product.stockBalances.reduce(
+      (sum, balance) => sum + balance.quantity,
+      0,
+    ),
     status: product.status,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   };
 }
 
-async function getAllProducts() {
-  const products = await prisma.product.findMany({
-    include: publicProductInclude,
-    orderBy: { createdAt: "desc" },
-  });
+async function listProducts(page: number, name?: string) {
+  const skip = (page - 1) * PAGE_SIZE;
+  const where = name
+    ? { name: { contains: name, mode: "insensitive" as const } }
+    : {};
+
+  const [rows, total] = await prisma.$transaction([
+    prisma.product.findMany({
+      where,
+      include: publicProductInclude,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: PAGE_SIZE,
+    }),
+    prisma.product.count({ where }),
+  ]);
 
   return {
     status: 200,
-    data: products.map(toPublicProduct),
+    data: {
+      items: rows.map(toPublicProduct),
+      total,
+      page,
+      pageSize: PAGE_SIZE,
+    },
+  };
+}
+
+async function getSummary() {
+  const [total, active, inactive, categories] = await prisma.$transaction([
+    prisma.product.count(),
+    prisma.product.count({ where: { status: "active" } }),
+    prisma.product.count({ where: { status: "inactive" } }),
+    prisma.category.count(),
+  ]);
+
+  return {
+    status: 200,
+    data: { total, active, inactive, categories },
   };
 }
 
@@ -202,7 +243,8 @@ async function deleteProductById(id: string) {
 }
 
 export const productService = {
-  getAllProducts,
+  listProducts,
+  getSummary,
   getProductById,
   createProduct,
   updateProductById,
