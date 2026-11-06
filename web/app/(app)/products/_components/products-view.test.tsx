@@ -33,11 +33,32 @@ const sampleProducts = [
     cost: 10,
     salePrice: 19.9,
     minStock: 5,
+    stockQuantity: 42,
     status: "active",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-02T00:00:00.000Z",
   },
 ];
+
+const sampleSummary = {
+  total: 12,
+  active: 10,
+  inactive: 2,
+  categories: 3,
+};
+
+function paginatedResponse(
+  items: typeof sampleProducts,
+  total = items.length,
+  page = 1,
+) {
+  return {
+    items,
+    total,
+    page,
+    pageSize: 10 as const,
+  };
+}
 
 function jsonResponse(data: unknown, ok = true, status = 200) {
   return {
@@ -47,6 +68,10 @@ function jsonResponse(data: unknown, ok = true, status = 200) {
   } as Response;
 }
 
+function isProductsListGet(url: string, init?: RequestInit) {
+  return url.startsWith("/api/products?") && !init?.method;
+}
+
 describe("ProductsView", () => {
   beforeEach(() => {
     toastAddMock.mockReset();
@@ -54,10 +79,17 @@ describe("ProductsView", () => {
   });
 
   it("renders products returned by GET /api/products", async () => {
-    vi.mocked(fetch).mockImplementation(async (input) => {
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
       const url = String(input);
-      if (url === "/api/products") return jsonResponse(sampleProducts);
-      if (url === "/api/categories") return jsonResponse(sampleCategories);
+      if (url === "/api/products/summary") {
+        return jsonResponse(sampleSummary);
+      }
+      if (url === "/api/categories") {
+        return jsonResponse(sampleCategories);
+      }
+      if (isProductsListGet(url, init)) {
+        return jsonResponse(paginatedResponse(sampleProducts, 12));
+      }
       return jsonResponse({ message: "Not found" }, false, 404);
     });
 
@@ -66,6 +98,85 @@ describe("ProductsView", () => {
     expect(await screen.findByText("Produto demonstração")).toBeInTheDocument();
     expect(screen.getByText("SKU-DEMO-001")).toBeInTheDocument();
     expect(screen.getByText("Geral")).toBeInTheDocument();
+    expect(screen.getByText("42 un")).toBeInTheDocument();
+    expect(screen.getByText("12 registros encontrados")).toBeInTheDocument();
+
+    expect(fetch).toHaveBeenCalledWith("/api/products?page=1");
+    expect(fetch).toHaveBeenCalledWith("/api/products/summary");
+  });
+
+  it("searches products by name and resets to page 1", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === "/api/products/summary") {
+        return jsonResponse(sampleSummary);
+      }
+      if (url === "/api/categories") {
+        return jsonResponse(sampleCategories);
+      }
+      if (isProductsListGet(url, init)) {
+        if (url.includes("name=Produto")) {
+          return jsonResponse(paginatedResponse(sampleProducts, 1));
+        }
+        return jsonResponse(paginatedResponse(sampleProducts, 12));
+      }
+      return jsonResponse({ message: "Not found" }, false, 404);
+    });
+
+    render(<ProductsView />);
+    expect(await screen.findByText("Produto demonstração")).toBeInTheDocument();
+
+    const search = screen.getByTestId("list-panel-search");
+    await user.clear(search);
+    await user.type(search, "Produto");
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith("/api/products?page=1&name=Produto");
+    });
+
+    expect(
+      await screen.findByText("1 registros encontrados"),
+    ).toBeInTheDocument();
+  });
+
+  it("loads the next page when clicking Próximo", async () => {
+    const user = userEvent.setup();
+    const page2Product = {
+      ...sampleProducts[0],
+      id: "prod_11",
+      name: "Produto página 2",
+      sku: "SKU-PAGE-2",
+    };
+
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === "/api/products/summary") {
+        return jsonResponse(sampleSummary);
+      }
+      if (url === "/api/categories") {
+        return jsonResponse(sampleCategories);
+      }
+      if (isProductsListGet(url, init)) {
+        if (url.includes("page=2")) {
+          return jsonResponse(paginatedResponse([page2Product], 12, 2));
+        }
+        return jsonResponse(paginatedResponse(sampleProducts, 12, 1));
+      }
+      return jsonResponse({ message: "Not found" }, false, 404);
+    });
+
+    render(<ProductsView />);
+    expect(await screen.findByText("Produto demonstração")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("list-panel-next"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith("/api/products?page=2");
+    });
+
+    expect(await screen.findByText("Produto página 2")).toBeInTheDocument();
   });
 
   it("creates a product through the new product sheet", async () => {
@@ -76,15 +187,22 @@ describe("ProductsView", () => {
       name: "Novo item",
       sku: "SKU-NEW-001",
     };
+    let listPayload = paginatedResponse(sampleProducts, 12);
 
     vi.mocked(fetch).mockImplementation(async (input, init) => {
       const url = String(input);
-      if (url === "/api/products" && !init?.method) {
-        return jsonResponse(sampleProducts);
+      if (url === "/api/products/summary") {
+        return jsonResponse({ ...sampleSummary, total: 13 });
       }
-      if (url === "/api/categories") return jsonResponse(sampleCategories);
+      if (url === "/api/categories") {
+        return jsonResponse(sampleCategories);
+      }
       if (url === "/api/products" && init?.method === "POST") {
+        listPayload = paginatedResponse([created, ...sampleProducts], 13);
         return jsonResponse(created, true, 201);
+      }
+      if (isProductsListGet(url, init)) {
+        return jsonResponse(listPayload);
       }
       return jsonResponse({ message: "Not found" }, false, 404);
     });
@@ -116,15 +234,22 @@ describe("ProductsView", () => {
       ...sampleProducts[0],
       name: "Produto atualizado",
     };
+    let listPayload = paginatedResponse(sampleProducts, 12);
 
     vi.mocked(fetch).mockImplementation(async (input, init) => {
       const url = String(input);
-      if (url === "/api/products" && !init?.method) {
-        return jsonResponse(sampleProducts);
+      if (url === "/api/products/summary") {
+        return jsonResponse(sampleSummary);
       }
-      if (url === "/api/categories") return jsonResponse(sampleCategories);
+      if (url === "/api/categories") {
+        return jsonResponse(sampleCategories);
+      }
       if (url === "/api/products/prod_1" && init?.method === "PATCH") {
+        listPayload = paginatedResponse([updated], 12);
         return jsonResponse(updated);
+      }
+      if (isProductsListGet(url, init)) {
+        return jsonResponse(listPayload);
       }
       return jsonResponse({ message: "Not found" }, false, 404);
     });
@@ -155,15 +280,25 @@ describe("ProductsView", () => {
 
   it("soft deletes a product through the row actions menu", async () => {
     const user = userEvent.setup();
+    let listPayload = paginatedResponse(sampleProducts, 12);
 
     vi.mocked(fetch).mockImplementation(async (input, init) => {
       const url = String(input);
-      if (url === "/api/products" && !init?.method) {
-        return jsonResponse(sampleProducts);
+      if (url === "/api/products/summary") {
+        return jsonResponse(sampleSummary);
       }
-      if (url === "/api/categories") return jsonResponse(sampleCategories);
+      if (url === "/api/categories") {
+        return jsonResponse(sampleCategories);
+      }
       if (url === "/api/products/prod_1" && init?.method === "DELETE") {
+        listPayload = paginatedResponse(
+          [{ ...sampleProducts[0], status: "inactive" }],
+          12,
+        );
         return jsonResponse({ message: "Produto desativado com sucesso." });
+      }
+      if (isProductsListGet(url, init)) {
+        return jsonResponse(listPayload);
       }
       return jsonResponse({ message: "Not found" }, false, 404);
     });
