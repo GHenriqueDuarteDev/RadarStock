@@ -11,6 +11,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 const pageTitles: Record<string, string> = {
   "/dashboard": "Visão geral",
   "/products": "Produtos",
+  "/warehouses": "Galpões",
   "/team": "Equipe",
   "/settings": "Configurações",
 };

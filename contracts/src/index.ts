@@ -74,9 +74,19 @@ export {
   warehouseInputSchema,
   updateWarehouseInputSchema,
   publicWarehouseSchema,
+  listWarehousesQuerySchema,
+  paginatedWarehousesSchema,
+  warehousesSummarySchema,
+  warehouseBalanceItemSchema,
+  warehouseBalancesSchema,
   type WarehouseInput,
   type UpdateWarehouseInput,
   type PublicWarehouse,
+  type ListWarehousesQuery,
+  type PaginatedWarehouses,
+  type WarehousesSummary,
+  type WarehouseBalanceItem,
+  type WarehouseBalances,
 } from "./warehouse";
 
 export {

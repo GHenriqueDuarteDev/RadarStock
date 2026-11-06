@@ -4,6 +4,7 @@ import {
   categoryRouter,
   productRouter,
   userRouter,
+  warehouseRouter,
 } from "../routes";
 
 const app = express();
@@ -19,6 +20,7 @@ app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/categories", categoryRouter);
 app.use("/products", productRouter);
+app.use("/warehouses", warehouseRouter);
 
 app.listen(port, "0.0.0.0", () => {
   console.log("API pronta na porta 3001");
