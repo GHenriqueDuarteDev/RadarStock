@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  alertRulesRouter,
+  alertsRouter,
   authRouter,
   categoryRouter,
   dashboardRouter,
@@ -31,6 +33,8 @@ app.use("/sales", salesRouter);
 app.use("/receipts", receiptsRouter);
 app.use("/inventory", inventoryCountsRouter);
 app.use("/dashboard", dashboardRouter);
+app.use("/alerts", alertsRouter);
+app.use("/alert-rules", alertRulesRouter);
 
 app.listen(port, "0.0.0.0", () => {
   console.log("API pronta na porta 3001");

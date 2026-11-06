@@ -31,15 +31,9 @@ async function getRecentMovements(_req: Request, res: Response) {
   res.status(status).json(data);
 }
 
-async function getAlerts(_req: Request, res: Response) {
-  const { status, data } = await dashboardService.getAlerts();
-  res.status(status).json(data);
-}
-
 export const dashboardController = {
   getMetrics,
   getMovementsSeries,
   getWarehouseDistribution,
   getRecentMovements,
-  getAlerts,
 };
