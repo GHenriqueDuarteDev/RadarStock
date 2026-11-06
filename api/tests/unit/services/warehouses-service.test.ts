@@ -37,6 +37,14 @@ vi.mock("../../../src/db", () => ({
   },
 }));
 
+vi.mock("../../../services/alerts-service", () => ({
+  alertsService: {
+    evaluateProduct: vi.fn().mockResolvedValue(undefined),
+    evaluateWarehouse: vi.fn().mockResolvedValue(undefined),
+    evaluateInventory: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { warehouseService } from "../../../services/warehouses-service";
 
 const publicWarehouse = {
