@@ -65,26 +65,6 @@ export const dashboardRecentMovementsSchema = z.object({
   items: z.array(dashboardRecentMovementSchema).max(5),
 });
 
-export const dashboardAlertKindSchema = z.enum([
-  "pending-counts",
-  "discrepancies",
-  "inactive-with-stock",
-  "full-warehouses",
-]);
-
-export const dashboardAlertItemSchema = z.object({
-  id: z.string().min(1),
-  kind: dashboardAlertKindSchema,
-  title: z.string().min(1),
-  count: z.number().int().positive(),
-  detail: z.string().min(1),
-});
-
-export const dashboardAlertsSchema = z.object({
-  items: z.array(dashboardAlertItemSchema),
-  totalCount: z.number().int().nonnegative(),
-});
-
 export type DashboardDays = z.infer<typeof dashboardDaysSchema>;
 export type DashboardMovementsQuery = z.infer<
   typeof dashboardMovementsQuerySchema
@@ -108,6 +88,3 @@ export type DashboardRecentMovement = z.infer<
 export type DashboardRecentMovements = z.infer<
   typeof dashboardRecentMovementsSchema
 >;
-export type DashboardAlertKind = z.infer<typeof dashboardAlertKindSchema>;
-export type DashboardAlertItem = z.infer<typeof dashboardAlertItemSchema>;
-export type DashboardAlerts = z.infer<typeof dashboardAlertsSchema>;
