@@ -54,6 +54,27 @@ enum DocumentStatus {
   cancelled
 }
 
+enum AlertKind {
+  low_stock
+  out_of_stock
+  warehouse_near_capacity
+  warehouse_full
+  inventory_pending
+  inventory_discrepancy
+  inactive_with_stock
+}
+
+enum AlertStatus {
+  open
+  resolved
+}
+
+enum AlertEntityType {
+  product
+  warehouse
+  inventory_count
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
@@ -234,4 +255,32 @@ model InventoryCountItem {
 
   inventoryCount InventoryCount @relation(fields: [inventoryCountId], references: [id], onDelete: Cascade)
   product        Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+}
+
+model Alert {
+  id         String          @id @default(cuid())
+  kind       AlertKind
+  status     AlertStatus     @default(open)
+  title      String
+  detail     String
+  entityType AlertEntityType
+  entityId   String
+  dedupeKey  String          @unique
+  payload    Json?
+  readAt     DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([status, readAt])
+  @@index([entityType, entityId])
+}
+
+model AlertRule {
+  id        String    @id @default(cuid())
+  kind      AlertKind @unique
+  enabled   Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
