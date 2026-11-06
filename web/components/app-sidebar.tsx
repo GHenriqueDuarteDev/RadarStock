@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { PublicUser } from "@radarstock/contracts";
+import {
+  hasPermission,
+  type Permission,
+  type PublicUser,
+} from "@radarstock/contracts";
 import {
   ArrowLeftRightIcon,
   BarChart3Icon,
@@ -49,6 +53,7 @@ type NavItem = {
   title: string;
   icon: LucideIcon;
   href?: string;
+  permission?: Permission;
 };
 
 const items: NavItem[] = [
@@ -60,7 +65,13 @@ const items: NavItem[] = [
   { title: "Recebimentos", href: "/receipts", icon: TruckIcon },
   { title: "Inventário", href: "/inventory", icon: ClipboardListIcon },
   { title: "Relatórios", href: "/reports", icon: BarChart3Icon },
-  { title: "Equipe", href: "/team", icon: UsersIcon },
+  { title: "Equipe", href: "/team", icon: UsersIcon, permission: "team.manage" },
+  {
+    title: "Configurações",
+    href: "/settings",
+    icon: SettingsIcon,
+    permission: "settings.read",
+  },
 ];
 
 type AppSidebarProps = {
@@ -141,6 +152,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarMenu>
               {items
                 .filter((item) => {
+                  if (item.permission) {
+                    return hasPermission(user?.role, item.permission);
+                  }
                   if (!item.href) {
                     return true;
                   }
@@ -220,10 +234,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <SettingsIcon />
-                Configurações
-              </DropdownMenuItem>
+              {hasPermission(user?.role, "settings.read") ? (
+                <DropdownMenuItem render={<Link href="/settings" />}>
+                  <SettingsIcon />
+                  Configurações
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem variant="destructive" onClick={logout}>
                 <LogOutIcon />
                 Sair
