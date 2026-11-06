@@ -97,8 +97,14 @@ export {
 export {
   stockMovementInputSchema,
   publicStockMovementSchema,
+  listStockMovementsQuerySchema,
+  paginatedStockMovementsSchema,
+  stockMovementsSummarySchema,
   type StockMovementInput,
   type PublicStockMovement,
+  type ListStockMovementsQuery,
+  type PaginatedStockMovements,
+  type StockMovementsSummary,
 } from "./stock-movement";
 
 export {
