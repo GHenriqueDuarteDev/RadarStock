@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { categoryController } from "../controller/categories-controller";
-import { requireInternalUser } from "../middlewares/auth-middleware";
+import {
+  requireInternalUser,
+  requirePermission,
+} from "../middlewares/auth-middleware";
 
 const categoryRouter = Router();
 
@@ -10,15 +13,22 @@ categoryRouter.get(
   requireInternalUser,
   categoryController.getCategoryById,
 );
-categoryRouter.post("/", requireInternalUser, categoryController.createCategory);
+categoryRouter.post(
+  "/",
+  requireInternalUser,
+  requirePermission("categories.write"),
+  categoryController.createCategory,
+);
 categoryRouter.patch(
   "/:id",
   requireInternalUser,
+  requirePermission("categories.write"),
   categoryController.updateCategoryById,
 );
 categoryRouter.delete(
   "/:id",
   requireInternalUser,
+  requirePermission("categories.write"),
   categoryController.deleteCategoryById,
 );
 

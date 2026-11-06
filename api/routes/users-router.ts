@@ -2,7 +2,7 @@ import { Router } from "express";
 import { userController } from "../controller/users-controller";
 import {
   requireInternalUser,
-  requireRoles,
+  requirePermission,
 } from "../middlewares/auth-middleware";
 
 const userRouter = Router();
@@ -11,32 +11,37 @@ userRouter.post("/", userController.registerUser);
 userRouter.get(
   "/",
   requireInternalUser,
-  requireRoles("admin"),
+  requirePermission("team.manage"),
   userController.listUsers,
 );
 userRouter.get(
   "/summary",
   requireInternalUser,
-  requireRoles("admin"),
+  requirePermission("team.manage"),
   userController.getSummary,
 );
 userRouter.get(
   "/:id",
   requireInternalUser,
-  requireRoles("admin"),
+  requirePermission("team.manage"),
   userController.getUserById,
 );
 userRouter.patch(
   "/:id/role",
   requireInternalUser,
-  requireRoles("admin"),
+  requirePermission("team.manage"),
   userController.updateUserRole,
 );
-userRouter.patch("/:id", requireInternalUser, userController.updateUserById);
+userRouter.patch(
+  "/:id",
+  requireInternalUser,
+  requirePermission("team.manage"),
+  userController.updateUserById,
+);
 userRouter.delete(
   "/:id",
   requireInternalUser,
-  requireRoles("admin"),
+  requirePermission("team.manage"),
   userController.deleteUserById,
 );
 

@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { inventoryCountController } from "../controller/inventory-counts-controller";
-import { requireInternalUser } from "../middlewares/auth-middleware";
+import {
+  requireInternalUser,
+  requirePermission,
+} from "../middlewares/auth-middleware";
 
 const inventoryCountsRouter = Router();
 
@@ -22,21 +25,25 @@ inventoryCountsRouter.get(
 inventoryCountsRouter.post(
   "/",
   requireInternalUser,
+  requirePermission("inventory.write"),
   inventoryCountController.createInventoryCount,
 );
 inventoryCountsRouter.patch(
   "/:id",
   requireInternalUser,
+  requirePermission("inventory.write"),
   inventoryCountController.updateInventoryCount,
 );
 inventoryCountsRouter.post(
   "/:id/confirm",
   requireInternalUser,
+  requirePermission("inventory.write"),
   inventoryCountController.confirmInventoryCount,
 );
 inventoryCountsRouter.post(
   "/:id/cancel",
   requireInternalUser,
+  requirePermission("inventory.write"),
   inventoryCountController.cancelInventoryCount,
 );
 
