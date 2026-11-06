@@ -1,11 +1,7 @@
 import { getSession } from "@/app/_lib/session";
 
-import { DashboardMetrics } from "./_components/dashboard-metrics";
+import { DashboardView } from "./_components/dashboard-view";
 import { DashboardWelcome } from "./_components/dashboard-welcome";
-import { OperationalAlerts } from "./_components/operational-alerts";
-import { RecentMovements } from "./_components/recent-movements";
-import { StockMovementChart } from "./_components/stock-movement-chart";
-import { WarehouseOccupancyChart } from "./_components/warehouse-occupancy-chart";
 
 async function getUserEmail(): Promise<string | null> {
   const session = await getSession();
@@ -40,13 +36,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-4">
       <DashboardWelcome email={email} />
-      <DashboardMetrics />
-      <div className="grid gap-3 lg:grid-cols-2">
-        <StockMovementChart />
-        <WarehouseOccupancyChart />
-        <RecentMovements />
-        <OperationalAlerts />
-      </div>
+      <DashboardView />
     </div>
   );
 }

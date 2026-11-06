@@ -1,65 +1,70 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import type { DashboardRecentMovement } from "@radarstock/contracts";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { displayValue } from "@/lib/utils";
 
-type MovementType = "entrada" | "venda" | "transferencia" | "ajuste";
-
-type RecentMovement = {
-  id: string;
-  product: string | null;
-  sku: string | null;
-  type: MovementType | null;
-  quantity: number | null;
-  location: string | null;
-  responsible: string | null;
-};
-
 type RecentMovementsProps = {
-  data?: RecentMovement[];
+  data?: DashboardRecentMovement[];
 };
 
-const typeLabel: Record<MovementType, string> = {
+type BadgeKind = "entrada" | "venda" | "saida" | "transferencia" | "ajuste";
+
+const typeLabel: Record<BadgeKind, string> = {
   entrada: "Entrada",
   venda: "Venda",
+  saida: "Saída",
   transferencia: "Transferência",
   ajuste: "Ajuste",
 };
 
-const typeClassName: Record<MovementType, string> = {
-  entrada: "bg-tag-entrada text-tag-entrada-foreground",
-  venda: "bg-tag-saida text-tag-saida-foreground",
-  transferencia: "bg-muted text-foreground",
-  ajuste: "bg-tag-pending text-tag-pending-foreground",
-};
+const typeVariant = {
+  entrada: "entrada",
+  venda: "saida",
+  saida: "saida",
+  transferencia: "default",
+  ajuste: "pending",
+} as const;
 
-function TypeBadge({ type }: { type: MovementType | null }) {
-  if (!type) {
-    return (
-      <span className="font-mono text-xs text-muted-foreground">
-        {displayValue(null)}
-      </span>
-    );
+function toBadgeKind(movement: DashboardRecentMovement): BadgeKind {
+  if (movement.type === "in") {
+    return "entrada";
   }
-
-  return (
-    <span
-      className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${typeClassName[type]}`}
-    >
-      {typeLabel[type]}
-    </span>
-  );
+  if (movement.type === "transfer") {
+    return "transferencia";
+  }
+  if (movement.type === "adjustment") {
+    return "ajuste";
+  }
+  if (movement.referenceType === "sale") {
+    return "venda";
+  }
+  return "saida";
 }
 
-function formatQuantity(value: number | null) {
-  if (value === null || value === undefined) {
-    return displayValue(value);
+function formatQuantity(movement: DashboardRecentMovement) {
+  if (movement.type === "out") {
+    return `-${movement.quantity}`;
   }
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value}`;
+  if (movement.type === "in") {
+    return `+${movement.quantity}`;
+  }
+  return String(movement.quantity);
+}
+
+function formatLocation(movement: DashboardRecentMovement) {
+  if (movement.fromWarehouseName && movement.toWarehouseName) {
+    return `${movement.fromWarehouseName} → ${movement.toWarehouseName}`;
+  }
+  return movement.toWarehouseName ?? movement.fromWarehouseName ?? null;
+}
+
+function TypeBadge({ kind }: { kind: BadgeKind }) {
+  return (
+    <Badge variant={typeVariant[kind]} size="sm">
+      {typeLabel[kind]}
+    </Badge>
+  );
 }
 
 export function RecentMovements({ data = [] }: RecentMovementsProps) {
@@ -93,48 +98,34 @@ export function RecentMovements({ data = [] }: RecentMovementsProps) {
             <tbody>
               {data.length === 0 ? (
                 <tr className="border-t-2 border-border">
-                  <td className="px-4 py-3">
-                    <div className="space-y-0.5">
-                      <p className="font-semibold">{displayValue(null)}</p>
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {displayValue(null)}
-                      </p>
-                    </div>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-6 text-center text-sm text-muted-foreground"
+                  >
+                    Nenhuma movimentação recente. {displayValue(null)}
                   </td>
-                  <td className="px-4 py-3">
-                    <TypeBadge type={null} />
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono">
-                    {displayValue(null)}
-                  </td>
-                  <td className="px-4 py-3">{displayValue(null)}</td>
-                  <td className="px-4 py-3">{displayValue(null)}</td>
                 </tr>
               ) : (
                 data.map((movement) => (
                   <tr key={movement.id} className="border-t-2 border-border">
                     <td className="px-4 py-3">
                       <div className="space-y-0.5">
-                        <p className="font-semibold">
-                          {displayValue(movement.product)}
-                        </p>
+                        <p className="font-semibold">{movement.productName}</p>
                         <p className="font-mono text-xs text-muted-foreground">
-                          {displayValue(movement.sku)}
+                          {movement.productSku}
                         </p>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <TypeBadge type={movement.type} />
+                    <td className="text-center">
+                      <TypeBadge kind={toBadgeKind(movement)} />
                     </td>
                     <td className="px-4 py-3 text-right font-mono">
-                      {formatQuantity(movement.quantity)}
+                      {formatQuantity(movement)}
                     </td>
                     <td className="px-4 py-3">
-                      {displayValue(movement.location)}
+                      {displayValue(formatLocation(movement))}
                     </td>
-                    <td className="px-4 py-3">
-                      {displayValue(movement.responsible)}
-                    </td>
+                    <td className="px-4 py-3">{movement.userName}</td>
                   </tr>
                 ))
               )}
