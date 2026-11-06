@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import {
-  publicSaleSchema,
   saleInputSchema,
   type PublicProduct,
-  type PublicSale,
   type PublicWarehouse,
   type SaleInput,
 } from "@radarstock/contracts";
+
+import { createSaleAction } from "../_actions";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 
@@ -49,7 +49,6 @@ type CreateSaleSheetProps = {
   products: PublicProduct[];
   warehouses: PublicWarehouse[];
   onClose: () => void;
-  onCreated: (sale: PublicSale) => void;
 };
 
 function toDateTimeLocalValue(date: Date) {
@@ -61,7 +60,6 @@ export function CreateSaleSheet({
   products,
   warehouses,
   onClose,
-  onCreated,
 }: CreateSaleSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const defaultProduct = products[0];
@@ -127,24 +125,16 @@ export function CreateSaleSheet({
     }
 
     try {
-      const response = await fetch("/api/sales", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await createSaleAction(parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao criar venda.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const sale = publicSaleSchema.parse(data);
       toast.add({ title: "Venda registrada com sucesso.", type: "success" });
-      onCreated(sale);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";
@@ -256,7 +246,7 @@ export function CreateSaleSheet({
                       id={`create-sale-item-product-${index}`}
                       data-testid={`create-sale-item-product-${index}`}
                       className={selectClassName}
-                      value={form.watch(`items.${index}.productId`)}
+                      value={watchedItems?.[index]?.productId ?? ""}
                       onChange={(event) =>
                         handleProductChange(index, event.target.value)
                       }

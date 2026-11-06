@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MoreHorizontalIcon } from "lucide-react";
 import type { DocumentStatus, PublicInventoryCount } from "@radarstock/contracts";
 
@@ -14,19 +15,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { displayValue } from "@/lib/utils";
 
+import { CancelInventoryDialog } from "./cancel-inventory-dialog";
+import { ConfirmInventoryDialog } from "./confirm-inventory-dialog";
+import { EditInventoryDialog } from "./edit-inventory-dialog";
+
 type InventoryTableProps = {
   data?: PublicInventoryCount[];
   total: number;
   page: number;
   pageSize: number;
-  searchValue: string;
-  onPageChange: (page: number) => void;
-  onSearchChange: (value: string) => void;
-  onSearchSubmit: () => void;
-  onEdit?: (inventory: PublicInventoryCount) => void;
-  onConfirm?: (inventory: PublicInventoryCount) => void;
-  onCancel?: (inventory: PublicInventoryCount) => void;
 };
+
+type RowDialog =
+  | { type: "edit"; inventory: PublicInventoryCount }
+  | { type: "confirm"; inventory: PublicInventoryCount }
+  | { type: "cancel"; inventory: PublicInventoryCount }
+  | null;
 
 const statusLabel: Record<DocumentStatus, string> = {
   draft: "Rascunho",
@@ -84,25 +88,17 @@ export function InventoryTable({
   total,
   page,
   pageSize,
-  searchValue,
-  onPageChange,
-  onSearchChange,
-  onSearchSubmit,
-  onEdit,
-  onConfirm,
-  onCancel,
 }: InventoryTableProps) {
+  const [dialog, setDialog] = useState<RowDialog>(null);
+
   return (
     <ListPanel
       title="Lista de inventários"
       totalCount={total}
       page={page}
       pageSize={pageSize}
-      onPageChange={onPageChange}
       searchPlaceholder="Buscar por código..."
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
-      onSearchSubmit={onSearchSubmit}
+      searchParam="code"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -206,14 +202,16 @@ export function InventoryTable({
                       <DropdownMenuContent align="end" className="min-w-44">
                         <DropdownMenuItem
                           disabled={inventory.status !== "draft"}
-                          onClick={() => onEdit?.(inventory)}
+                          onClick={() => setDialog({ type: "edit", inventory })}
                           data-testid={`inventory-edit-${inventory.id}`}
                         >
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={inventory.status !== "draft"}
-                          onClick={() => onConfirm?.(inventory)}
+                          onClick={() =>
+                            setDialog({ type: "confirm", inventory })
+                          }
                           data-testid={`inventory-confirm-${inventory.id}`}
                         >
                           Confirmar
@@ -221,7 +219,9 @@ export function InventoryTable({
                         <DropdownMenuItem
                           variant="destructive"
                           disabled={inventory.status === "cancelled"}
-                          onClick={() => onCancel?.(inventory)}
+                          onClick={() =>
+                            setDialog({ type: "cancel", inventory })
+                          }
                           data-testid={`inventory-cancel-${inventory.id}`}
                         >
                           Cancelar
@@ -235,6 +235,27 @@ export function InventoryTable({
           </tbody>
         </table>
       </div>
+      {dialog?.type === "edit" ? (
+        <EditInventoryDialog
+          key={dialog.inventory.id}
+          inventory={dialog.inventory}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog?.type === "confirm" ? (
+        <ConfirmInventoryDialog
+          key={dialog.inventory.id}
+          inventory={dialog.inventory}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog?.type === "cancel" ? (
+        <CancelInventoryDialog
+          key={dialog.inventory.id}
+          inventory={dialog.inventory}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
     </ListPanel>
   );
 }

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  publicInventoryCountSchema,
-  type PublicInventoryCount,
-} from "@radarstock/contracts";
+import type { PublicInventoryCount } from "@radarstock/contracts";
+
+import { cancelInventoryAction } from "../_actions";
 import { ClipboardListIcon } from "lucide-react";
 
 import {
@@ -23,13 +22,11 @@ import { toast } from "@/components/ui/toast";
 type CancelInventoryDialogProps = {
   inventory: PublicInventoryCount;
   onClose: () => void;
-  onCancelled: (inventory: PublicInventoryCount) => void;
 };
 
 export function CancelInventoryDialog({
   inventory,
   onClose,
-  onCancelled,
 }: CancelInventoryDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,29 +37,21 @@ export function CancelInventoryDialog({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/inventory/${inventory.id}/cancel`, {
-        method: "POST",
-      });
+      const result = await cancelInventoryAction(inventory.id);
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const message =
-          (data as { message?: string }).message ??
-          "Falha ao cancelar inventário.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const cancelled = publicInventoryCountSchema.parse(data);
       toast.add({
         title: isDraft
           ? "Rascunho de inventário cancelado."
           : "Inventário cancelado e estoque restaurado.",
         type: "success",
       });
-      onCancelled(cancelled);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

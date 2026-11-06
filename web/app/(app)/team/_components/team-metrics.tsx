@@ -25,25 +25,21 @@ export function TeamMetrics({ data = null }: TeamMetricsProps) {
         label="Total de membros"
         value={data?.total}
         icon={UsersIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Ativos"
         value={data?.active}
         icon={UserCheckIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Inativos"
         value={data?.inactive}
         icon={UserXIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Admins"
         value={data?.admins}
         icon={ShieldIcon}
-        hint="-- período"
       />
     </MetricCards>
   );

@@ -25,25 +25,21 @@ export function MovementsMetrics({ data = null }: MovementsMetricsProps) {
         label="Total de movimentações"
         value={data?.total}
         icon={BoxesIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Entradas"
         value={data?.in}
         icon={ArrowDownToLineIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Saídas"
         value={data?.out}
         icon={ArrowUpFromLineIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Transferências"
         value={data?.transfer}
         icon={ArrowLeftRightIcon}
-        hint="-- período"
       />
     </MetricCards>
   );

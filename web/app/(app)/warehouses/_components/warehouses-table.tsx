@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MoreHorizontalIcon } from "lucide-react";
 import type { PublicWarehouse, WarehouseStatus } from "@radarstock/contracts";
 
@@ -14,18 +15,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { displayValue } from "@/lib/utils";
 
+import { DeleteWarehouseDialog } from "./delete-warehouse-dialog";
+import { EditWarehouseSheet } from "./edit-warehouse-sheet";
+
 type WarehousesTableProps = {
   data?: PublicWarehouse[];
   total: number;
   page: number;
   pageSize: number;
-  searchValue: string;
-  onPageChange: (page: number) => void;
-  onSearchChange: (value: string) => void;
-  onSearchSubmit: () => void;
-  onEdit?: (warehouse: PublicWarehouse) => void;
-  onDelete?: (warehouse: PublicWarehouse) => void;
 };
+
+type RowDialog =
+  | { type: "edit"; warehouse: PublicWarehouse }
+  | { type: "delete"; warehouse: PublicWarehouse }
+  | null;
 
 const statusLabel: Record<WarehouseStatus, string> = {
   active: "Ativo",
@@ -60,24 +63,17 @@ export function WarehousesTable({
   total,
   page,
   pageSize,
-  searchValue,
-  onPageChange,
-  onSearchChange,
-  onSearchSubmit,
-  onEdit,
-  onDelete,
 }: WarehousesTableProps) {
+  const [dialog, setDialog] = useState<RowDialog>(null);
+
   return (
     <ListPanel
       title="Lista de galpões"
       totalCount={total}
       page={page}
       pageSize={pageSize}
-      onPageChange={onPageChange}
       searchPlaceholder="Buscar galpão..."
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
-      onSearchSubmit={onSearchSubmit}
+      searchParam="name"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -163,14 +159,18 @@ export function WarehousesTable({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="min-w-44">
                         <DropdownMenuItem
-                          onClick={() => onEdit?.(warehouse)}
+                          onClick={() =>
+                            setDialog({ type: "edit", warehouse })
+                          }
                           data-testid={`warehouse-edit-${warehouse.id}`}
                         >
                           Alterar dados
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           variant="destructive"
-                          onClick={() => onDelete?.(warehouse)}
+                          onClick={() =>
+                            setDialog({ type: "delete", warehouse })
+                          }
                           data-testid={`warehouse-delete-${warehouse.id}`}
                         >
                           Desativar galpão
@@ -184,6 +184,20 @@ export function WarehousesTable({
           </tbody>
         </table>
       </div>
+      {dialog?.type === "edit" ? (
+        <EditWarehouseSheet
+          key={dialog.warehouse.id}
+          warehouse={dialog.warehouse}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog?.type === "delete" ? (
+        <DeleteWarehouseDialog
+          key={dialog.warehouse.id}
+          warehouse={dialog.warehouse}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
     </ListPanel>
   );
 }

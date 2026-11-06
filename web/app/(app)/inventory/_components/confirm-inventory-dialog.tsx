@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  publicInventoryCountSchema,
-  type PublicInventoryCount,
-} from "@radarstock/contracts";
+import type { PublicInventoryCount } from "@radarstock/contracts";
+
+import { confirmInventoryAction } from "../_actions";
 import { ClipboardCheckIcon } from "lucide-react";
 
 import {
@@ -23,13 +22,11 @@ import { toast } from "@/components/ui/toast";
 type ConfirmInventoryDialogProps = {
   inventory: PublicInventoryCount;
   onClose: () => void;
-  onConfirmed: (inventory: PublicInventoryCount) => void;
 };
 
 export function ConfirmInventoryDialog({
   inventory,
   onClose,
-  onConfirmed,
 }: ConfirmInventoryDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -39,27 +36,19 @@ export function ConfirmInventoryDialog({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/inventory/${inventory.id}/confirm`, {
-        method: "POST",
-      });
+      const result = await confirmInventoryAction(inventory.id);
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const message =
-          (data as { message?: string }).message ??
-          "Falha ao confirmar inventário.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const confirmed = publicInventoryCountSchema.parse(data);
       toast.add({
         title: "Inventário confirmado e estoque ajustado.",
         type: "success",
       });
-      onConfirmed(confirmed);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

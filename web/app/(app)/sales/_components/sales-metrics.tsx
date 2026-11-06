@@ -35,25 +35,21 @@ export function SalesMetrics({ data = null }: SalesMetricsProps) {
         label="Total de vendas"
         value={data?.total}
         icon={ShoppingCartIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Confirmadas"
         value={data?.confirmed}
         icon={BadgeCheckIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Canceladas"
         value={data?.cancelled}
         icon={BadgeXIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Valor confirmado"
         value={formatCurrency(data?.totalAmount)}
         icon={CircleDollarSignIcon}
-        hint="-- período"
       />
     </MetricCards>
   );

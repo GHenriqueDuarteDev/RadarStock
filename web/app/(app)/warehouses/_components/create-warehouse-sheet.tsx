@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import {
-  publicWarehouseSchema,
   warehouseInputSchema,
-  type PublicWarehouse,
   type WarehouseInput,
   type WarehouseStatus,
 } from "@radarstock/contracts";
 import { useForm } from "react-hook-form";
+
+import { createWarehouseAction } from "../_actions";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,13 +46,9 @@ type CreateWarehouseFormValues = {
 
 type CreateWarehouseSheetProps = {
   onClose: () => void;
-  onCreated: (warehouse: PublicWarehouse) => void;
 };
 
-export function CreateWarehouseSheet({
-  onClose,
-  onCreated,
-}: CreateWarehouseSheetProps) {
+export function CreateWarehouseSheet({ onClose }: CreateWarehouseSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<CreateWarehouseFormValues>({
@@ -85,24 +81,16 @@ export function CreateWarehouseSheet({
     }
 
     try {
-      const response = await fetch("/api/warehouses", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await createWarehouseAction(parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao criar galpão.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const warehouse = publicWarehouseSchema.parse(data);
       toast.add({ title: "Galpão criado com sucesso.", type: "success" });
-      onCreated(warehouse);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

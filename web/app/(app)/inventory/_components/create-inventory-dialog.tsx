@@ -3,14 +3,17 @@
 import { useEffect, useState } from "react";
 import {
   inventoryCountInputSchema,
-  publicInventoryCountSchema,
-  warehouseBalancesSchema,
   type InventoryCountInput,
   type PublicInventoryCount,
   type PublicWarehouse,
   type WarehouseBalanceItem,
 } from "@radarstock/contracts";
-import { useForm } from "react-hook-form";
+
+import {
+  createInventoryAction,
+  getWarehouseBalancesAction,
+} from "../_actions";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -64,53 +67,51 @@ export function CreateInventoryDialog({
     },
   });
 
-  const warehouseId = form.watch("warehouseId");
+  const warehouseId = useWatch({ control: form.control, name: "warehouseId" });
 
   useEffect(() => {
     if (!warehouseId) {
-      setPreviewItems([]);
       return;
     }
 
     let cancelled = false;
 
-    async function loadPreview() {
-      setPreviewLoading(true);
-      setPreviewError(null);
-      try {
-        const response = await fetch(`/api/warehouses/${warehouseId}/balances`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(
-            data.message ?? "Falha ao carregar saldos do galpão.",
-          );
+    const timer = setTimeout(() => {
+      void (async () => {
+        setPreviewLoading(true);
+        setPreviewError(null);
+        try {
+          const result = await getWarehouseBalancesAction(warehouseId);
+          if (!result.ok) {
+            throw new Error(result.message);
+          }
+          if (!cancelled) {
+            setPreviewItems(result.data.items);
+          }
+        } catch (err) {
+          if (!cancelled) {
+            setPreviewItems([]);
+            setPreviewError(
+              err instanceof Error
+                ? err.message
+                : "Falha ao carregar saldos do galpão.",
+            );
+          }
+        } finally {
+          if (!cancelled) {
+            setPreviewLoading(false);
+          }
         }
-        const balances = warehouseBalancesSchema.parse(data);
-        if (!cancelled) {
-          setPreviewItems(balances.items);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setPreviewItems([]);
-          setPreviewError(
-            err instanceof Error
-              ? err.message
-              : "Falha ao carregar saldos do galpão.",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setPreviewLoading(false);
-        }
-      }
-    }
-
-    void loadPreview();
+      })();
+    }, 0);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [warehouseId]);
+
+  const visiblePreviewItems = warehouseId ? previewItems : [];
 
   async function onSubmit(values: CreateInventoryFormValues) {
     setServerError(null);
@@ -129,27 +130,19 @@ export function CreateInventoryDialog({
     }
 
     try {
-      const response = await fetch("/api/inventory", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await createInventoryAction(parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao criar inventário.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const inventory = publicInventoryCountSchema.parse(data);
       toast.add({
         title: "Inventário criado como rascunho.",
         type: "success",
       });
-      onCreated(inventory);
+      onCreated(result.data);
     } catch {
       const message = "Não foi possível conectar ao servidor. Tente novamente.";
       setServerError(message);
@@ -226,7 +219,7 @@ export function CreateInventoryDialog({
                 <p role="alert" className="text-sm text-destructive">
                   {previewError}
                 </p>
-              ) : previewItems.length === 0 ? (
+              ) : visiblePreviewItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Nenhum produto com saldo neste galpão.
                 </p>
@@ -235,7 +228,7 @@ export function CreateInventoryDialog({
                   className="space-y-2 rounded-md border-2 border-border p-3"
                   data-testid="create-inventory-preview"
                 >
-                  {previewItems.map((item) => (
+                  {visiblePreviewItems.map((item) => (
                     <div
                       key={item.productId}
                       className="flex items-center justify-between gap-3 text-sm"
@@ -277,7 +270,7 @@ export function CreateInventoryDialog({
               disabled={
                 form.formState.isSubmitting ||
                 warehouses.length === 0 ||
-                previewItems.length === 0
+                visiblePreviewItems.length === 0
               }
               data-testid="create-inventory-save"
             >

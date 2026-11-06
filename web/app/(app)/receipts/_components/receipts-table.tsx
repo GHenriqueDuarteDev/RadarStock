@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MoreHorizontalIcon } from "lucide-react";
 import type { DocumentStatus, PublicReceipt } from "@radarstock/contracts";
 
@@ -14,16 +15,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { displayValue } from "@/lib/utils";
 
+import { CancelReceiptDialog } from "./cancel-receipt-dialog";
+
 type ReceiptsTableProps = {
   data?: PublicReceipt[];
   total: number;
   page: number;
   pageSize: number;
-  searchValue: string;
-  onPageChange: (page: number) => void;
-  onSearchChange: (value: string) => void;
-  onSearchSubmit: () => void;
-  onCancel?: (receipt: PublicReceipt) => void;
 };
 
 const statusLabel: Record<DocumentStatus, string> = {
@@ -80,23 +78,19 @@ export function ReceiptsTable({
   total,
   page,
   pageSize,
-  searchValue,
-  onPageChange,
-  onSearchChange,
-  onSearchSubmit,
-  onCancel,
 }: ReceiptsTableProps) {
+  const [cancelReceipt, setCancelReceipt] = useState<PublicReceipt | null>(
+    null,
+  );
+
   return (
     <ListPanel
       title="Lista de recebimentos"
       totalCount={total}
       page={page}
       pageSize={pageSize}
-      onPageChange={onPageChange}
       searchPlaceholder="Buscar por código..."
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
-      onSearchSubmit={onSearchSubmit}
+      searchParam="code"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -210,7 +204,7 @@ export function ReceiptsTable({
                         <DropdownMenuItem
                           variant="destructive"
                           disabled={receipt.status !== "confirmed"}
-                          onClick={() => onCancel?.(receipt)}
+                          onClick={() => setCancelReceipt(receipt)}
                           data-testid={`receipt-cancel-${receipt.id}`}
                         >
                           Cancelar recebimento
@@ -224,6 +218,13 @@ export function ReceiptsTable({
           </tbody>
         </table>
       </div>
+      {cancelReceipt ? (
+        <CancelReceiptDialog
+          key={cancelReceipt.id}
+          receipt={cancelReceipt}
+          onClose={() => setCancelReceipt(null)}
+        />
+      ) : null}
     </ListPanel>
   );
 }

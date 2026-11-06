@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MoreHorizontalIcon } from "lucide-react";
 import type { DocumentStatus, PublicSale } from "@radarstock/contracts";
 
@@ -14,16 +15,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { displayValue } from "@/lib/utils";
 
+import { CancelSaleDialog } from "./cancel-sale-dialog";
+
 type SalesTableProps = {
   data?: PublicSale[];
   total: number;
   page: number;
   pageSize: number;
-  searchValue: string;
-  onPageChange: (page: number) => void;
-  onSearchChange: (value: string) => void;
-  onSearchSubmit: () => void;
-  onCancel?: (sale: PublicSale) => void;
 };
 
 const statusLabel: Record<DocumentStatus, string> = {
@@ -80,23 +78,17 @@ export function SalesTable({
   total,
   page,
   pageSize,
-  searchValue,
-  onPageChange,
-  onSearchChange,
-  onSearchSubmit,
-  onCancel,
 }: SalesTableProps) {
+  const [cancelSale, setCancelSale] = useState<PublicSale | null>(null);
+
   return (
     <ListPanel
       title="Lista de vendas"
       totalCount={total}
       page={page}
       pageSize={pageSize}
-      onPageChange={onPageChange}
       searchPlaceholder="Buscar por código..."
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
-      onSearchSubmit={onSearchSubmit}
+      searchParam="code"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -201,7 +193,7 @@ export function SalesTable({
                         <DropdownMenuItem
                           variant="destructive"
                           disabled={sale.status !== "confirmed"}
-                          onClick={() => onCancel?.(sale)}
+                          onClick={() => setCancelSale(sale)}
                           data-testid={`sale-cancel-${sale.id}`}
                         >
                           Cancelar venda
@@ -215,6 +207,13 @@ export function SalesTable({
           </tbody>
         </table>
       </div>
+      {cancelSale ? (
+        <CancelSaleDialog
+          key={cancelSale.id}
+          sale={cancelSale}
+          onClose={() => setCancelSale(null)}
+        />
+      ) : null}
     </ListPanel>
   );
 }

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import {
-  publicCategorySchema,
   updateCategoryInputSchema,
   type PublicCategory,
 } from "@radarstock/contracts";
+
+import { updateCategoryAction } from "../_actions";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -34,13 +35,11 @@ type EditCategoryFormValues = {
 type EditCategorySheetProps = {
   category: PublicCategory;
   onClose: () => void;
-  onSaved: (category: PublicCategory) => void;
 };
 
 export function EditCategorySheet({
   category,
   onClose,
-  onSaved,
 }: EditCategorySheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -67,27 +66,19 @@ export function EditCategorySheet({
     }
 
     try {
-      const response = await fetch(`/api/categories/${category.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await updateCategoryAction(category.id, parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao atualizar categoria.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const updated = publicCategorySchema.parse(data);
       toast.add({
         title: "Categoria atualizada com sucesso.",
         type: "success",
       });
-      onSaved(updated);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

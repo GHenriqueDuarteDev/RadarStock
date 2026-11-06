@@ -22,20 +22,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { displayValue } from "@/lib/utils";
 
+import { CreateCategorySheet } from "./create-category-sheet";
+import { DeleteCategoryDialog } from "./delete-category-dialog";
+import { EditCategorySheet } from "./edit-category-sheet";
+
 type CategoriesTableProps = {
   data?: PublicCategory[];
-  onCreate: () => void;
-  onEdit?: (category: PublicCategory) => void;
-  onDelete?: (category: PublicCategory) => void;
 };
 
-export function CategoriesTable({
-  data = [],
-  onCreate,
-  onEdit,
-  onDelete,
-}: CategoriesTableProps) {
+type RowDialog =
+  | { type: "create" }
+  | { type: "edit"; category: PublicCategory }
+  | { type: "delete"; category: PublicCategory }
+  | null;
+
+export function CategoriesTable({ data = [] }: CategoriesTableProps) {
   const [search, setSearch] = useState("");
+  const [dialog, setDialog] = useState<RowDialog>(null);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -79,7 +82,11 @@ export function CategoriesTable({
                 data-testid="categories-search"
               />
             </div>
-            <Button type="button" data-testid="new-category" onClick={onCreate}>
+            <Button
+              type="button"
+              data-testid="new-category"
+              onClick={() => setDialog({ type: "create" })}
+            >
               <PlusIcon data-icon="inline-start" />
               Nova categoria
             </Button>
@@ -135,14 +142,18 @@ export function CategoriesTable({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="min-w-44">
                           <DropdownMenuItem
-                            onClick={() => onEdit?.(category)}
+                            onClick={() =>
+                              setDialog({ type: "edit", category })
+                            }
                             data-testid={`category-edit-${category.id}`}
                           >
                             Alterar dados
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => onDelete?.(category)}
+                            onClick={() =>
+                              setDialog({ type: "delete", category })
+                            }
                             data-testid={`category-delete-${category.id}`}
                           >
                             Excluir categoria
@@ -163,6 +174,23 @@ export function CategoriesTable({
           Mostrando {filtered.length} de {data.length}
         </p>
       </CardFooter>
+      {dialog?.type === "create" ? (
+        <CreateCategorySheet onClose={() => setDialog(null)} />
+      ) : null}
+      {dialog?.type === "edit" ? (
+        <EditCategorySheet
+          key={dialog.category.id}
+          category={dialog.category}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog?.type === "delete" ? (
+        <DeleteCategoryDialog
+          key={dialog.category.id}
+          category={dialog.category}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
     </Card>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MoreHorizontalIcon } from "lucide-react";
 import type {
   PublicUserRecord,
@@ -17,6 +18,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { displayValue } from "@/lib/utils";
+
+import { ChangeRoleSheet } from "./change-role-sheet";
+import { DeleteUserDialog } from "./delete-user-dialog";
+import { EditUserSheet } from "./edit-user-sheet";
 
 const roleLabel: Record<UserRole, string> = {
   admin: "Admin",
@@ -42,15 +47,14 @@ type TeamTableProps = {
   total: number;
   page: number;
   pageSize: number;
-  searchValue: string;
   currentUserId?: string | null;
-  onPageChange: (page: number) => void;
-  onSearchChange: (value: string) => void;
-  onSearchSubmit: () => void;
-  onEdit?: (user: PublicUserRecord) => void;
-  onChangeRole?: (user: PublicUserRecord) => void;
-  onDelete?: (user: PublicUserRecord) => void;
 };
+
+type RowDialog =
+  | { type: "edit"; user: PublicUserRecord }
+  | { type: "role"; user: PublicUserRecord }
+  | { type: "delete"; user: PublicUserRecord }
+  | null;
 
 function formatCreatedAt(value: Date | string | null | undefined) {
   if (value === null || value === undefined) {
@@ -96,26 +100,18 @@ export function TeamTable({
   total,
   page,
   pageSize,
-  searchValue,
   currentUserId = null,
-  onPageChange,
-  onSearchChange,
-  onSearchSubmit,
-  onEdit,
-  onChangeRole,
-  onDelete,
 }: TeamTableProps) {
+  const [dialog, setDialog] = useState<RowDialog>(null);
+
   return (
     <ListPanel
       title="Lista de membros"
       totalCount={total}
       page={page}
       pageSize={pageSize}
-      onPageChange={onPageChange}
       searchPlaceholder="Buscar membro..."
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
-      onSearchSubmit={onSearchSubmit}
+      searchParam="name"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -203,7 +199,7 @@ export function TeamTable({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="min-w-44">
                         <DropdownMenuItem
-                          onClick={() => onEdit?.(user)}
+                          onClick={() => setDialog({ type: "edit", user })}
                           data-testid={`user-edit-${user.id}`}
                         >
                           Alterar dados
@@ -211,14 +207,14 @@ export function TeamTable({
                         {user.id !== currentUserId ? (
                           <>
                             <DropdownMenuItem
-                              onClick={() => onChangeRole?.(user)}
+                              onClick={() => setDialog({ type: "role", user })}
                               data-testid={`user-role-${user.id}`}
                             >
                               Alterar permissão
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               variant="destructive"
-                              onClick={() => onDelete?.(user)}
+                              onClick={() => setDialog({ type: "delete", user })}
                               data-testid={`user-delete-${user.id}`}
                             >
                               Deletar usuário
@@ -234,6 +230,27 @@ export function TeamTable({
           </tbody>
         </table>
       </div>
+      {dialog?.type === "edit" ? (
+        <EditUserSheet
+          key={dialog.user.id}
+          user={dialog.user}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog?.type === "role" ? (
+        <ChangeRoleSheet
+          key={dialog.user.id}
+          user={dialog.user}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog?.type === "delete" ? (
+        <DeleteUserDialog
+          key={dialog.user.id}
+          user={dialog.user}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
     </ListPanel>
   );
 }

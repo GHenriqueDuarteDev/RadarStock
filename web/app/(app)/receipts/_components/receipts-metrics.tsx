@@ -35,25 +35,21 @@ export function ReceiptsMetrics({ data = null }: ReceiptsMetricsProps) {
         label="Total de recebimentos"
         value={data?.total}
         icon={TruckIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Confirmados"
         value={data?.confirmed}
         icon={BadgeCheckIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Cancelados"
         value={data?.cancelled}
         icon={BadgeXIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Valor recebido"
         value={formatCurrency(data?.totalCost)}
         icon={CircleDollarSignIcon}
-        hint="-- período"
       />
     </MetricCards>
   );

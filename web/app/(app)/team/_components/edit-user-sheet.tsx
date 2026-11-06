@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  publicUserRecordSchema,
-  type PublicUserRecord,
-} from "@radarstock/contracts";
+import type { PublicUserRecord } from "@radarstock/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+
+import { updateUserAction } from "../_actions";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -38,10 +37,9 @@ type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 type EditUserSheetProps = {
   user: PublicUserRecord;
   onClose: () => void;
-  onSaved: (user: PublicUserRecord) => void;
 };
 
-export function EditUserSheet({ user, onClose, onSaved }: EditUserSheetProps) {
+export function EditUserSheet({ user, onClose }: EditUserSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<EditUserFormValues>({
@@ -65,20 +63,14 @@ export function EditUserSheet({ user, onClose, onSaved }: EditUserSheetProps) {
     };
 
     try {
-      const response = await fetch(`/api/users/${user.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const result = await updateUserAction(user.id, payload);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setServerError(data.message ?? "Falha ao atualizar.");
+      if (!result.ok) {
+        setServerError(result.message);
         return;
       }
 
-      onSaved(publicUserRecordSchema.parse(data));
+      onClose();
     } catch {
       setServerError("Não foi possível conectar ao servidor. Tente novamente.");
     }

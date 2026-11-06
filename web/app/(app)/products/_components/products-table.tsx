@@ -1,7 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { MoreHorizontalIcon } from "lucide-react";
-import type { PublicProduct, ProductStatus } from "@radarstock/contracts";
+import type {
+  PublicCategory,
+  PublicProduct,
+  ProductStatus,
+} from "@radarstock/contracts";
 
 import { ListPanel } from "@/components/list-panel";
 import { Badge } from "@/components/ui/badge";
@@ -14,18 +19,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { displayValue } from "@/lib/utils";
 
+import { DeleteProductDialog } from "./delete-product-dialog";
+import { EditProductSheet } from "./edit-product-sheet";
+
 type ProductsTableProps = {
   data?: PublicProduct[];
   total: number;
   page: number;
   pageSize: number;
-  searchValue: string;
-  onPageChange: (page: number) => void;
-  onSearchChange: (value: string) => void;
-  onSearchSubmit: () => void;
-  onEdit?: (product: PublicProduct) => void;
-  onDelete?: (product: PublicProduct) => void;
+  categories: PublicCategory[];
 };
+
+type RowDialog =
+  | { type: "edit"; product: PublicProduct }
+  | { type: "delete"; product: PublicProduct }
+  | null;
 
 const statusLabel: Record<ProductStatus, string> = {
   active: "Ativo",
@@ -70,24 +78,18 @@ export function ProductsTable({
   total,
   page,
   pageSize,
-  searchValue,
-  onPageChange,
-  onSearchChange,
-  onSearchSubmit,
-  onEdit,
-  onDelete,
+  categories,
 }: ProductsTableProps) {
+  const [dialog, setDialog] = useState<RowDialog>(null);
+
   return (
     <ListPanel
       title="Lista de produtos"
       totalCount={total}
       page={page}
       pageSize={pageSize}
-      onPageChange={onPageChange}
       searchPlaceholder="Buscar produto..."
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
-      onSearchSubmit={onSearchSubmit}
+      searchParam="name"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -191,14 +193,16 @@ export function ProductsTable({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="min-w-44">
                         <DropdownMenuItem
-                          onClick={() => onEdit?.(product)}
+                          onClick={() => setDialog({ type: "edit", product })}
                           data-testid={`product-edit-${product.id}`}
                         >
                           Alterar dados
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           variant="destructive"
-                          onClick={() => onDelete?.(product)}
+                          onClick={() =>
+                            setDialog({ type: "delete", product })
+                          }
                           data-testid={`product-delete-${product.id}`}
                         >
                           Desativar produto
@@ -212,6 +216,21 @@ export function ProductsTable({
           </tbody>
         </table>
       </div>
+      {dialog?.type === "edit" ? (
+        <EditProductSheet
+          key={dialog.product.id}
+          product={dialog.product}
+          categories={categories}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog?.type === "delete" ? (
+        <DeleteProductDialog
+          key={dialog.product.id}
+          product={dialog.product}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
     </ListPanel>
   );
 }

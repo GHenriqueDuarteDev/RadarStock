@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  publicUserRecordSchema,
   updateUserRoleSchema,
   type PublicUserRecord,
   type UpdateUserRole,
@@ -10,6 +9,8 @@ import {
 } from "@radarstock/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+
+import { updateUserRoleAction } from "../_actions";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -35,14 +36,9 @@ const selectClassName =
 type ChangeRoleSheetProps = {
   user: PublicUserRecord;
   onClose: () => void;
-  onSaved: (user: PublicUserRecord) => void;
 };
 
-export function ChangeRoleSheet({
-  user,
-  onClose,
-  onSaved,
-}: ChangeRoleSheetProps) {
+export function ChangeRoleSheet({ user, onClose }: ChangeRoleSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<UpdateUserRole>({
@@ -56,20 +52,14 @@ export function ChangeRoleSheet({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/users/${user.id}/role`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(values),
-      });
+      const result = await updateUserRoleAction(user.id, values);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setServerError(data.message ?? "Falha ao alterar permissão.");
+      if (!result.ok) {
+        setServerError(result.message);
         return;
       }
 
-      onSaved(publicUserRecordSchema.parse(data));
+      onClose();
     } catch {
       setServerError("Não foi possível conectar ao servidor. Tente novamente.");
     }

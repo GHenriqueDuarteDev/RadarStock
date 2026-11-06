@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import {
-  publicStockMovementSchema,
   stockMovementInputSchema,
   type PublicProduct,
-  type PublicStockMovement,
   type PublicWarehouse,
   type StockMovementInput,
   type StockMovementType,
 } from "@radarstock/contracts";
+
+import { createMovementAction } from "../_actions";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -54,14 +54,12 @@ type CreateMovementSheetProps = {
   products: PublicProduct[];
   warehouses: PublicWarehouse[];
   onClose: () => void;
-  onCreated: (movement: PublicStockMovement) => void;
 };
 
 export function CreateMovementSheet({
   products,
   warehouses,
   onClose,
-  onCreated,
 }: CreateMovementSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -78,6 +76,10 @@ export function CreateMovementSheet({
   });
 
   const selectedType = useWatch({ control: form.control, name: "type" });
+  const adjustmentDirection = useWatch({
+    control: form.control,
+    name: "adjustmentDirection",
+  });
 
   useEffect(() => {
     form.setValue("fromWarehouseId", warehouses[0]?.id ?? "");
@@ -153,27 +155,19 @@ export function CreateMovementSheet({
     }
 
     try {
-      const response = await fetch("/api/movements", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await createMovementAction(parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao criar movimentação.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const movement = publicStockMovementSchema.parse(data);
       toast.add({
         title: "Movimentação registrada com sucesso.",
         type: "success",
       });
-      onCreated(movement);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";
@@ -185,13 +179,11 @@ export function CreateMovementSheet({
   const showFrom =
     selectedType === "out" ||
     selectedType === "transfer" ||
-    (selectedType === "adjustment" &&
-      form.watch("adjustmentDirection") === "decrease");
+    (selectedType === "adjustment" && adjustmentDirection === "decrease");
   const showTo =
     selectedType === "in" ||
     selectedType === "transfer" ||
-    (selectedType === "adjustment" &&
-      form.watch("adjustmentDirection") === "increase");
+    (selectedType === "adjustment" && adjustmentDirection === "increase");
 
   return (
     <Sheet

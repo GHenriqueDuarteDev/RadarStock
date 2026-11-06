@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import {
-  publicProductSchema,
   updateProductInputSchema,
   type PublicCategory,
   type PublicProduct,
   type ProductStatus,
 } from "@radarstock/contracts";
 import { useForm } from "react-hook-form";
+
+import { updateProductAction } from "../_actions";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,14 +53,12 @@ type EditProductSheetProps = {
   product: PublicProduct;
   categories: PublicCategory[];
   onClose: () => void;
-  onSaved: (product: PublicProduct) => void;
 };
 
 export function EditProductSheet({
   product,
   categories,
   onClose,
-  onSaved,
 }: EditProductSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -100,24 +99,16 @@ export function EditProductSheet({
     }
 
     try {
-      const response = await fetch(`/api/products/${product.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await updateProductAction(product.id, parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao atualizar produto.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const updated = publicProductSchema.parse(data);
       toast.add({ title: "Produto atualizado com sucesso.", type: "success" });
-      onSaved(updated);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

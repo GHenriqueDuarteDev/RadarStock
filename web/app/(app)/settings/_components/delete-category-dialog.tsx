@@ -17,16 +17,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/toast";
 
+import { deleteCategoryAction } from "../_actions";
+
 type DeleteCategoryDialogProps = {
   category: PublicCategory;
   onClose: () => void;
-  onDeleted: (id: string) => void;
 };
 
 export function DeleteCategoryDialog({
   category,
   onClose,
-  onDeleted,
 }: DeleteCategoryDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -36,17 +36,11 @@ export function DeleteCategoryDialog({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/categories/${category.id}`, {
-        method: "DELETE",
-      });
+      const result = await deleteCategoryAction(category.id);
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const message =
-          (data as { message?: string }).message ?? "Falha ao excluir.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
@@ -54,7 +48,7 @@ export function DeleteCategoryDialog({
         title: "Categoria excluída com sucesso.",
         type: "success",
       });
-      onDeleted(category.id);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

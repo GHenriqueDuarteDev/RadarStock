@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import {
-  publicWarehouseSchema,
   updateWarehouseInputSchema,
   type PublicWarehouse,
   type WarehouseStatus,
 } from "@radarstock/contracts";
 import { useForm } from "react-hook-form";
+
+import { updateWarehouseAction } from "../_actions";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,13 +47,11 @@ type EditWarehouseFormValues = {
 type EditWarehouseSheetProps = {
   warehouse: PublicWarehouse;
   onClose: () => void;
-  onSaved: (warehouse: PublicWarehouse) => void;
 };
 
 export function EditWarehouseSheet({
   warehouse,
   onClose,
-  onSaved,
 }: EditWarehouseSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -89,27 +88,19 @@ export function EditWarehouseSheet({
     }
 
     try {
-      const response = await fetch(`/api/warehouses/${warehouse.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await updateWarehouseAction(warehouse.id, parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao atualizar galpão.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const updated = publicWarehouseSchema.parse(data);
       toast.add({
         title: "Galpão atualizado com sucesso.",
         type: "success",
       });
-      onSaved(updated);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";
