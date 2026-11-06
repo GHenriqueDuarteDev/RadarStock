@@ -5,25 +5,34 @@ const {
   findUniqueMock,
   createMock,
   updateMock,
+  countMock,
   categoryFindUniqueMock,
+  categoryCountMock,
+  transactionMock,
 } = vi.hoisted(() => ({
   findManyMock: vi.fn(),
   findUniqueMock: vi.fn(),
   createMock: vi.fn(),
   updateMock: vi.fn(),
+  countMock: vi.fn(),
   categoryFindUniqueMock: vi.fn(),
+  categoryCountMock: vi.fn(),
+  transactionMock: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
 }));
 
 vi.mock("../../../src/db", () => ({
   prisma: {
+    $transaction: transactionMock,
     product: {
       findMany: findManyMock,
       findUnique: findUniqueMock,
       create: createMock,
       update: updateMock,
+      count: countMock,
     },
     category: {
       findUnique: categoryFindUniqueMock,
+      count: categoryCountMock,
     },
   },
 }));
@@ -44,6 +53,7 @@ const dbProduct = {
   createdAt: new Date("2026-01-01"),
   updatedAt: new Date("2026-01-02"),
   category: { id: "cat_1", name: "Geral" },
+  stockBalances: [] as { quantity: number }[],
 };
 
 const publicProduct = {
@@ -57,22 +67,160 @@ const publicProduct = {
   cost: 10,
   salePrice: 19.9,
   minStock: 5,
+  stockQuantity: 0,
   status: "active" as const,
   createdAt: new Date("2026-01-01"),
   updatedAt: new Date("2026-01-02"),
 };
 
-describe("productService.getAllProducts", () => {
+describe("productService.listProducts", () => {
   beforeEach(() => {
     findManyMock.mockReset();
+    countMock.mockReset();
+    transactionMock.mockClear();
   });
 
-  it("returns 200 with mapped products including category", async () => {
+  it("returns 200 with paginated products including category", async () => {
     findManyMock.mockResolvedValue([dbProduct]);
+    countMock.mockResolvedValue(1);
 
-    const result = await productService.getAllProducts();
+    const result = await productService.listProducts(1);
 
-    expect(result).toEqual({ status: 200, data: [publicProduct] });
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {},
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: "desc" },
+      }),
+    );
+    expect(result).toEqual({
+      status: 200,
+      data: {
+        items: [publicProduct],
+        total: 1,
+        page: 1,
+        pageSize: 10,
+      },
+    });
+  });
+
+  it("returns 200 with empty list when there are no products", async () => {
+    findManyMock.mockResolvedValue([]);
+    countMock.mockResolvedValue(0);
+
+    const result = await productService.listProducts(1);
+
+    expect(result).toEqual({
+      status: 200,
+      data: {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+      },
+    });
+  });
+
+  it("applies skip for page 2", async () => {
+    findManyMock.mockResolvedValue([]);
+    countMock.mockResolvedValue(15);
+
+    await productService.listProducts(2);
+
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 10,
+        take: 10,
+      }),
+    );
+  });
+
+  it("filters by product name when name is provided", async () => {
+    findManyMock.mockResolvedValue([dbProduct]);
+    countMock.mockResolvedValue(1);
+
+    await productService.listProducts(1, "demonstração");
+
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          name: { contains: "demonstração", mode: "insensitive" },
+        },
+      }),
+    );
+    expect(countMock).toHaveBeenCalledWith({
+      where: {
+        name: { contains: "demonstração", mode: "insensitive" },
+      },
+    });
+  });
+
+  it("sums stockBalances into stockQuantity", async () => {
+    findManyMock.mockResolvedValue([
+      {
+        ...dbProduct,
+        stockBalances: [{ quantity: 10 }, { quantity: 5 }],
+      },
+    ]);
+    countMock.mockResolvedValue(1);
+
+    const result = await productService.listProducts(1);
+
+    expect(result).toEqual({
+      status: 200,
+      data: {
+        items: [{ ...publicProduct, stockQuantity: 15 }],
+        total: 1,
+        page: 1,
+        pageSize: 10,
+      },
+    });
+  });
+});
+
+describe("productService.getSummary", () => {
+  beforeEach(() => {
+    countMock.mockReset();
+    categoryCountMock.mockReset();
+    transactionMock.mockClear();
+  });
+
+  it("returns 200 with global product metrics", async () => {
+    countMock
+      .mockResolvedValueOnce(20)
+      .mockResolvedValueOnce(15)
+      .mockResolvedValueOnce(5);
+    categoryCountMock.mockResolvedValue(4);
+
+    const result = await productService.getSummary();
+
+    expect(result).toEqual({
+      status: 200,
+      data: {
+        total: 20,
+        active: 15,
+        inactive: 5,
+        categories: 4,
+      },
+    });
+  });
+
+  it("returns zeros when there are no products or categories", async () => {
+    countMock.mockResolvedValue(0);
+    categoryCountMock.mockResolvedValue(0);
+
+    const result = await productService.getSummary();
+
+    expect(result).toEqual({
+      status: 200,
+      data: {
+        total: 0,
+        active: 0,
+        inactive: 0,
+        categories: 0,
+      },
+    });
   });
 });
 
