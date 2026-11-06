@@ -132,11 +132,17 @@ export {
   updateReceiptInputSchema,
   publicReceiptItemSchema,
   publicReceiptSchema,
+  listReceiptsQuerySchema,
+  paginatedReceiptsSchema,
+  receiptsSummarySchema,
   type ReceiptItemInput,
   type ReceiptInput,
   type UpdateReceiptInput,
   type PublicReceiptItem,
   type PublicReceipt,
+  type ListReceiptsQuery,
+  type PaginatedReceipts,
+  type ReceiptsSummary,
 } from "./receipt";
 
 export {
