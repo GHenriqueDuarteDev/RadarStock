@@ -56,7 +56,7 @@ const items: NavItem[] = [
   { title: "Produtos", href: "/products", icon: PackageIcon },
   { title: "Galpões", href: "/warehouses", icon: WarehouseIcon },
   { title: "Movimentações", href: "/movements", icon: ArrowLeftRightIcon },
-  { title: "Vendas", icon: ShoppingCartIcon },
+  { title: "Vendas", href: "/sales", icon: ShoppingCartIcon },
   { title: "Recebimentos", icon: TruckIcon },
   { title: "Inventário", icon: ClipboardListIcon },
   { title: "Relatórios", icon: BarChart3Icon },
