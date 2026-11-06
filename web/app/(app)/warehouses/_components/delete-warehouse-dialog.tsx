@@ -17,16 +17,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/toast";
 
+import { deactivateWarehouseAction } from "../_actions";
+
 type DeleteWarehouseDialogProps = {
   warehouse: PublicWarehouse;
   onClose: () => void;
-  onDeleted: (id: string) => void;
 };
 
 export function DeleteWarehouseDialog({
   warehouse,
   onClose,
-  onDeleted,
 }: DeleteWarehouseDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -36,17 +36,11 @@ export function DeleteWarehouseDialog({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/warehouses/${warehouse.id}`, {
-        method: "DELETE",
-      });
+      const result = await deactivateWarehouseAction(warehouse.id);
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const message =
-          (data as { message?: string }).message ?? "Falha ao desativar.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
@@ -54,7 +48,7 @@ export function DeleteWarehouseDialog({
         title: "Galpão desativado com sucesso.",
         type: "success",
       });
-      onDeleted(warehouse.id);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

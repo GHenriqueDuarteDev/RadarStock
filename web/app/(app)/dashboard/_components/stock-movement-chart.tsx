@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import type { DashboardDays, DashboardMovementPoint } from "@radarstock/contracts";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -26,7 +27,6 @@ import {
 type StockMovementChartProps = {
   data?: DashboardMovementPoint[];
   days: DashboardDays;
-  onDaysChange: (days: DashboardDays) => void;
 };
 
 const DAY_OPTIONS: DashboardDays[] = [7, 30, 90];
@@ -42,7 +42,6 @@ function shortDateLabel(date: string) {
 export function StockMovementChart({
   data = [],
   days,
-  onDaysChange,
 }: StockMovementChartProps) {
   const hasData = data.length > 0;
   const chartData = data.map((point) => ({
@@ -63,16 +62,19 @@ export function StockMovementChart({
           </div>
           <div className="flex gap-1">
             {DAY_OPTIONS.map((option) => (
-              <Button
+              <Link
                 key={option}
-                type="button"
-                size="sm"
-                variant={days === option ? "default" : "outline"}
-                onClick={() => onDaysChange(option)}
+                href={`/dashboard?days=${option}`}
+                scroll={false}
+                aria-current={days === option ? "true" : undefined}
+                className={buttonVariants({
+                  size: "sm",
+                  variant: days === option ? "default" : "outline",
+                })}
                 data-testid={`movements-days-${option}`}
               >
                 {option}d
-              </Button>
+              </Link>
             ))}
           </div>
         </div>

@@ -14,10 +14,6 @@ type MovementsTableProps = {
   total: number;
   page: number;
   pageSize: number;
-  searchValue: string;
-  onPageChange: (page: number) => void;
-  onSearchChange: (value: string) => void;
-  onSearchSubmit: () => void;
 };
 
 const typeLabel: Record<StockMovementType, string> = {
@@ -67,10 +63,6 @@ export function MovementsTable({
   total,
   page,
   pageSize,
-  searchValue,
-  onPageChange,
-  onSearchChange,
-  onSearchSubmit,
 }: MovementsTableProps) {
   return (
     <ListPanel
@@ -78,11 +70,8 @@ export function MovementsTable({
       totalCount={total}
       page={page}
       pageSize={pageSize}
-      onPageChange={onPageChange}
       searchPlaceholder="Buscar por produto..."
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
-      onSearchSubmit={onSearchSubmit}
+      searchParam="name"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">

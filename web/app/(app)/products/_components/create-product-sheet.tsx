@@ -3,13 +3,13 @@
 import { useState } from "react";
 import {
   productInputSchema,
-  publicProductSchema,
   type ProductInput,
   type PublicCategory,
-  type PublicProduct,
   type ProductStatus,
 } from "@radarstock/contracts";
 import { useForm } from "react-hook-form";
+
+import { createProductAction } from "../_actions";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,13 +52,11 @@ type CreateProductFormValues = {
 type CreateProductSheetProps = {
   categories: PublicCategory[];
   onClose: () => void;
-  onCreated: (product: PublicProduct) => void;
 };
 
 export function CreateProductSheet({
   categories,
   onClose,
-  onCreated,
 }: CreateProductSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -99,24 +97,16 @@ export function CreateProductSheet({
     }
 
     try {
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await createProductAction(parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao criar produto.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const product = publicProductSchema.parse(data);
       toast.add({ title: "Produto criado com sucesso.", type: "success" });
-      onCreated(product);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

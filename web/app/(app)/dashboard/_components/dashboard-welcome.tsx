@@ -1,6 +1,3 @@
-import { CalendarIcon } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { displayValue } from "@/lib/utils";
 
 type DashboardWelcomeProps = {
@@ -20,17 +17,11 @@ export function DashboardWelcome({ email }: DashboardWelcomeProps) {
   const name = email ? displayNameFromEmail(email) : displayValue(null);
 
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0 space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight">Olá, {name}</h1>
-        <p className="text-sm text-muted-foreground">
-          Aqui está o resumo da sua operação hoje.
-        </p>
-      </div>
-      <Button type="button" variant="outline" size="default" disabled>
-        <CalendarIcon data-icon="inline-start" />
-        Últimos 30 dias
-      </Button>
+    <div className="min-w-0 space-y-1">
+      <h1 className="text-xl font-semibold tracking-tight">Olá, {name}</h1>
+      <p className="text-sm text-muted-foreground">
+        Aqui está o resumo da sua operação hoje.
+      </p>
     </div>
   );
 }

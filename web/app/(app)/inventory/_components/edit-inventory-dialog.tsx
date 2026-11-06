@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import {
-  publicInventoryCountSchema,
   updateInventoryCountInputSchema,
   type PublicInventoryCount,
 } from "@radarstock/contracts";
+
+import { updateInventoryAction } from "../_actions";
 import { useFieldArray, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,6 @@ type EditInventoryFormValues = {
 type EditInventoryDialogProps = {
   inventory: PublicInventoryCount;
   onClose: () => void;
-  onSaved: (inventory: PublicInventoryCount) => void;
 };
 
 function toDateTimeLocalValue(value: Date | string | null) {
@@ -55,7 +55,6 @@ function toDateTimeLocalValue(value: Date | string | null) {
 export function EditInventoryDialog({
   inventory,
   onClose,
-  onSaved,
 }: EditInventoryDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -98,27 +97,19 @@ export function EditInventoryDialog({
     }
 
     try {
-      const response = await fetch(`/api/inventory/${inventory.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await updateInventoryAction(inventory.id, parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao atualizar inventário.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const updated = publicInventoryCountSchema.parse(data);
       toast.add({
         title: "Contagem atualizada.",
         type: "success",
       });
-      onSaved(updated);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

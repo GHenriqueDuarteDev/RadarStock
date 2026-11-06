@@ -25,25 +25,21 @@ export function WarehousesMetrics({ data = null }: WarehousesMetricsProps) {
         label="Total de galpões"
         value={data?.total}
         icon={WarehouseIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Ativos"
         value={data?.active}
         icon={PackageCheckIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Inativos"
         value={data?.inactive}
         icon={PackageMinusIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Capacidade total"
         value={data?.totalCapacity}
         icon={BoxesIcon}
-        hint="-- período"
       />
     </MetricCards>
   );

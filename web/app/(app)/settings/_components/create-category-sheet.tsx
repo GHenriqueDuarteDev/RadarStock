@@ -3,10 +3,10 @@
 import { useState } from "react";
 import {
   categoryInputSchema,
-  publicCategorySchema,
   type CategoryInput,
-  type PublicCategory,
 } from "@radarstock/contracts";
+
+import { createCategoryAction } from "../_actions";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -34,13 +34,9 @@ type CreateCategoryFormValues = {
 
 type CreateCategorySheetProps = {
   onClose: () => void;
-  onCreated: (category: PublicCategory) => void;
 };
 
-export function CreateCategorySheet({
-  onClose,
-  onCreated,
-}: CreateCategorySheetProps) {
+export function CreateCategorySheet({ onClose }: CreateCategorySheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<CreateCategoryFormValues>({
@@ -66,24 +62,16 @@ export function CreateCategorySheet({
     }
 
     try {
-      const response = await fetch("/api/categories", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await createCategoryAction(parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao criar categoria.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const category = publicCategorySchema.parse(data);
       toast.add({ title: "Categoria criada com sucesso.", type: "success" });
-      onCreated(category);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

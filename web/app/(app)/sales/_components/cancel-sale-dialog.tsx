@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { publicSaleSchema, type PublicSale } from "@radarstock/contracts";
+import type { PublicSale } from "@radarstock/contracts";
+
+import { cancelSaleAction } from "../_actions";
 import { ShoppingCartIcon } from "lucide-react";
 
 import {
@@ -20,14 +22,9 @@ import { toast } from "@/components/ui/toast";
 type CancelSaleDialogProps = {
   sale: PublicSale;
   onClose: () => void;
-  onCancelled: (sale: PublicSale) => void;
 };
 
-export function CancelSaleDialog({
-  sale,
-  onClose,
-  onCancelled,
-}: CancelSaleDialogProps) {
+export function CancelSaleDialog({ sale, onClose }: CancelSaleDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,26 +33,19 @@ export function CancelSaleDialog({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/sales/${sale.id}/cancel`, {
-        method: "POST",
-      });
+      const result = await cancelSaleAction(sale.id);
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const message =
-          (data as { message?: string }).message ?? "Falha ao cancelar venda.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const cancelled = publicSaleSchema.parse(data);
       toast.add({
         title: "Venda cancelada e estoque estornado.",
         type: "success",
       });
-      onCancelled(cancelled);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { PublicUserRecord } from "@radarstock/contracts";
 import { Trash2Icon } from "lucide-react";
 
+import { deleteUserAction } from "../_actions";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,14 +21,9 @@ import {
 type DeleteUserDialogProps = {
   user: PublicUserRecord;
   onClose: () => void;
-  onDeleted: (id: string) => void;
 };
 
-export function DeleteUserDialog({
-  user,
-  onClose,
-  onDeleted,
-}: DeleteUserDialogProps) {
+export function DeleteUserDialog({ user, onClose }: DeleteUserDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -35,20 +32,14 @@ export function DeleteUserDialog({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/users/${user.id}`, {
-        method: "DELETE",
-      });
+      const result = await deleteUserAction(user.id);
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setServerError(
-          (data as { message?: string }).message ?? "Falha ao deletar.",
-        );
+      if (!result.ok) {
+        setServerError(result.message);
         return;
       }
 
-      onDeleted(user.id);
+      onClose();
     } catch {
       setServerError("Não foi possível conectar ao servidor. Tente novamente.");
     } finally {

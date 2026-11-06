@@ -1,24 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   alertBadgeSchema,
   alertsListSchema,
   type AlertBadge,
   type PublicAlert,
+  type PublicUser,
 } from "@radarstock/contracts";
-import { BellIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { BellIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const pageTitles: Record<string, string> = {
@@ -31,7 +33,22 @@ const pageTitles: Record<string, string> = {
   "/inventory": "Inventário",
   "/team": "Equipe",
   "/settings": "Configurações",
+  "/reports": "Relatórios",
 };
+
+const quickActions: Array<{
+  label: string;
+  href: string;
+  adminOnly?: boolean;
+}> = [
+  { label: "Novo produto", href: "/products?new=1" },
+  { label: "Novo galpão", href: "/warehouses?new=1" },
+  { label: "Nova movimentação", href: "/movements?new=1" },
+  { label: "Nova venda", href: "/sales?new=1" },
+  { label: "Novo recebimento", href: "/receipts?new=1" },
+  { label: "Novo inventário", href: "/inventory?new=1" },
+  { label: "Novo membro", href: "/team?new=1", adminOnly: true },
+];
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   weekday: "long",
@@ -46,7 +63,11 @@ function formatDateTime(date: Date) {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
-export function AppHeader() {
+type AppHeaderProps = {
+  user?: PublicUser | null;
+};
+
+export function AppHeader({ user = null }: AppHeaderProps) {
   const pathname = usePathname();
   const pageTitle = pageTitles[pathname] ?? "RadarStock";
 
@@ -58,14 +79,13 @@ export function AppHeader() {
   const [items, setItems] = useState<PublicAlert[]>([]);
   const [loadingPanel, setLoadingPanel] = useState(false);
 
-  const loadBadge = useCallback(async () => {
-    const response = await fetch("/api/alerts/badge");
-    if (!response.ok) {
-      return;
-    }
-    const data = alertBadgeSchema.parse(await response.json());
-    setBadge(data);
-  }, []);
+  const visibleQuickActions = useMemo(
+    () =>
+      quickActions.filter(
+        (action) => !action.adminOnly || user?.role === "admin",
+      ),
+    [user?.role],
+  );
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
@@ -73,12 +93,32 @@ export function AppHeader() {
   }, []);
 
   useEffect(() => {
-    void loadBadge();
-    const timer = setInterval(() => {
-      void loadBadge();
+    let cancelled = false;
+
+    async function refreshBadge() {
+      const response = await fetch("/api/alerts/badge");
+      if (!response.ok || cancelled) {
+        return;
+      }
+      const data = alertBadgeSchema.parse(await response.json());
+      if (!cancelled) {
+        setBadge(data);
+      }
+    }
+
+    const initialTimer = setTimeout(() => {
+      void refreshBadge();
+    }, 0);
+    const intervalTimer = setInterval(() => {
+      void refreshBadge();
     }, 60_000);
-    return () => clearInterval(timer);
-  }, [loadBadge]);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(initialTimer);
+      clearInterval(intervalTimer);
+    };
+  }, []);
 
   async function handleOpenChange(open: boolean) {
     if (!open) {
@@ -125,16 +165,6 @@ export function AppHeader() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <div className="relative hidden w-56 sm:block md:w-64">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar produto, SKU..."
-            className="h-8 pl-8"
-            aria-label="Buscar produto ou SKU"
-          />
-        </div>
-
         <DropdownMenu onOpenChange={(open) => void handleOpenChange(open)}>
           <DropdownMenuTrigger
             render={
@@ -192,10 +222,30 @@ export function AppHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button type="button" size="default">
-          <PlusIcon data-icon="inline-start" />
-          Ação rápida
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                type="button"
+                size="default"
+                data-testid="quick-actions-trigger"
+              />
+            }
+          >
+            <PlusIcon data-icon="inline-start" />
+            Ação rápida
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" data-testid="quick-actions-menu">
+            {visibleQuickActions.map((action) => (
+              <DropdownMenuItem
+                key={action.href}
+                render={<Link href={action.href} />}
+              >
+                {action.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

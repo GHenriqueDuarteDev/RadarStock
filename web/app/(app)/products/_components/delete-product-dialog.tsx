@@ -17,16 +17,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/toast";
 
+import { deactivateProductAction } from "../_actions";
+
 type DeleteProductDialogProps = {
   product: PublicProduct;
   onClose: () => void;
-  onDeleted: (id: string) => void;
 };
 
 export function DeleteProductDialog({
   product,
   onClose,
-  onDeleted,
 }: DeleteProductDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -36,17 +36,11 @@ export function DeleteProductDialog({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/products/${product.id}`, {
-        method: "DELETE",
-      });
+      const result = await deactivateProductAction(product.id);
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const message =
-          (data as { message?: string }).message ?? "Falha ao desativar.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
@@ -54,7 +48,7 @@ export function DeleteProductDialog({
         title: "Produto desativado com sucesso.",
         type: "success",
       });
-      onDeleted(product.id);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

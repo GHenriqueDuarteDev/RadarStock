@@ -3,14 +3,13 @@
 import { useState } from "react";
 import {
   adminCreateUserSchema,
-  publicUserRecordSchema,
   type AdminCreateUser,
-  type PublicUserRecord,
   type UserRole,
 } from "@radarstock/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+import { createUserAction } from "../_actions";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -41,10 +40,9 @@ const selectClassName =
 
 type CreateUserSheetProps = {
   onClose: () => void;
-  onCreated: (user: PublicUserRecord) => void;
 };
 
-export function CreateUserSheet({ onClose, onCreated }: CreateUserSheetProps) {
+export function CreateUserSheet({ onClose }: CreateUserSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<AdminCreateUser>({
@@ -62,27 +60,19 @@ export function CreateUserSheet({ onClose, onCreated }: CreateUserSheetProps) {
     setServerError(null);
 
     try {
-      const response = await fetch("/api/users", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(values),
-      });
+      const result = await createUserAction(values);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao criar membro.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const user = publicUserRecordSchema.parse(data);
       toast.add({
         title: "Membro criado com sucesso.",
         type: "success",
       });
-      onCreated(user);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

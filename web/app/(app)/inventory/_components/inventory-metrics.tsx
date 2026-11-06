@@ -35,25 +35,21 @@ export function InventoryMetrics({ data = null }: InventoryMetricsProps) {
         label="Contagem em andamento"
         value={data?.inProgress}
         icon={ClipboardListIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Contagens concluídas"
         value={data?.completed}
         icon={BadgeCheckIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Divergências"
         value={data?.discrepancies}
         icon={TriangleAlertIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Acurácia média"
         value={formatAccuracy(data?.averageAccuracy)}
         icon={PercentIcon}
-        hint="-- período"
       />
     </MetricCards>
   );

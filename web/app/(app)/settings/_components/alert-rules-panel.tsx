@@ -13,10 +13,11 @@ import {
 } from "@/components/ui/card";
 import { toast } from "@/components/ui/toast";
 
+import { updateAlertRuleAction } from "../_actions";
+
 type AlertRulesPanelProps = {
   rules: AlertRule[];
   canEdit: boolean;
-  onRuleChange: (rule: AlertRule) => void;
 };
 
 const ruleCopy: Record<AlertKind, { title: string; description: string }> = {
@@ -50,20 +51,7 @@ const ruleCopy: Record<AlertKind, { title: string; description: string }> = {
   },
 };
 
-async function readErrorMessage(response: Response) {
-  try {
-    const data = (await response.json()) as { message?: string };
-    return data.message ?? "Não foi possível atualizar o gatilho.";
-  } catch {
-    return "Não foi possível atualizar o gatilho.";
-  }
-}
-
-export function AlertRulesPanel({
-  rules,
-  canEdit,
-  onRuleChange,
-}: AlertRulesPanelProps) {
+export function AlertRulesPanel({ rules, canEdit }: AlertRulesPanelProps) {
   const [pendingKind, setPendingKind] = useState<AlertKind | null>(null);
 
   async function handleToggle(rule: AlertRule) {
@@ -75,18 +63,14 @@ export function AlertRulesPanel({
     setPendingKind(rule.kind);
 
     try {
-      const response = await fetch(`/api/alert-rules/${rule.kind}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ enabled: nextEnabled }),
+      const result = await updateAlertRuleAction(rule.kind, {
+        enabled: nextEnabled,
       });
 
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
+      if (!result.ok) {
+        throw new Error(result.message);
       }
 
-      const updated = (await response.json()) as AlertRule;
-      onRuleChange(updated);
       toast.add({
         title: nextEnabled ? "Gatilho ativado" : "Gatilho desativado",
         type: "success",

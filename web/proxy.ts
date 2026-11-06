@@ -27,5 +27,6 @@ export const config = {
     "/inventory/:path*",
     "/team/:path*",
     "/settings/:path*",
+    "/reports/:path*",
   ],
 };

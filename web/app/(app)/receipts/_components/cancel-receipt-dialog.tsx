@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  publicReceiptSchema,
-  type PublicReceipt,
-} from "@radarstock/contracts";
+import type { PublicReceipt } from "@radarstock/contracts";
+
+import { cancelReceiptAction } from "../_actions";
 import { TruckIcon } from "lucide-react";
 
 import {
@@ -23,13 +22,11 @@ import { toast } from "@/components/ui/toast";
 type CancelReceiptDialogProps = {
   receipt: PublicReceipt;
   onClose: () => void;
-  onCancelled: (receipt: PublicReceipt) => void;
 };
 
 export function CancelReceiptDialog({
   receipt,
   onClose,
-  onCancelled,
 }: CancelReceiptDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -39,27 +36,19 @@ export function CancelReceiptDialog({
     setServerError(null);
 
     try {
-      const response = await fetch(`/api/receipts/${receipt.id}/cancel`, {
-        method: "POST",
-      });
+      const result = await cancelReceiptAction(receipt.id);
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const message =
-          (data as { message?: string }).message ??
-          "Falha ao cancelar recebimento.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const cancelled = publicReceiptSchema.parse(data);
       toast.add({
         title: "Recebimento cancelado e estoque estornado.",
         type: "success",
       });
-      onCancelled(cancelled);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";

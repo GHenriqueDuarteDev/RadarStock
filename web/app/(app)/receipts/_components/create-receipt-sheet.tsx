@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import {
-  publicReceiptSchema,
   receiptInputSchema,
   type PublicProduct,
-  type PublicReceipt,
   type PublicWarehouse,
   type ReceiptInput,
 } from "@radarstock/contracts";
+
+import { createReceiptAction } from "../_actions";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 
@@ -50,7 +50,6 @@ type CreateReceiptSheetProps = {
   products: PublicProduct[];
   warehouses: PublicWarehouse[];
   onClose: () => void;
-  onCreated: (receipt: PublicReceipt) => void;
 };
 
 function toDateTimeLocalValue(date: Date) {
@@ -62,7 +61,6 @@ export function CreateReceiptSheet({
   products,
   warehouses,
   onClose,
-  onCreated,
 }: CreateReceiptSheetProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const defaultProduct = products[0];
@@ -133,27 +131,19 @@ export function CreateReceiptSheet({
     }
 
     try {
-      const response = await fetch("/api/receipts", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      const result = await createReceiptAction(parsed.data);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const message = data.message ?? "Falha ao criar recebimento.";
-        setServerError(message);
-        toast.add({ title: message, type: "error" });
+      if (!result.ok) {
+        setServerError(result.message);
+        toast.add({ title: result.message, type: "error" });
         return;
       }
 
-      const receipt = publicReceiptSchema.parse(data);
       toast.add({
         title: "Recebimento registrado com sucesso.",
         type: "success",
       });
-      onCreated(receipt);
+      onClose();
     } catch {
       const message =
         "Não foi possível conectar ao servidor. Tente novamente.";
@@ -279,7 +269,7 @@ export function CreateReceiptSheet({
                       id={`create-receipt-item-product-${index}`}
                       data-testid={`create-receipt-item-product-${index}`}
                       className={selectClassName}
-                      value={form.watch(`items.${index}.productId`)}
+                      value={watchedItems?.[index]?.productId ?? ""}
                       onChange={(event) =>
                         handleProductChange(index, event.target.value)
                       }
