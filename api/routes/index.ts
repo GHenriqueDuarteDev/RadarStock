@@ -3,3 +3,4 @@ export { userRouter } from "./users-router";
 export { categoryRouter } from "./categories-router";
 export { productRouter } from "./products-router";
 export { warehouseRouter } from "./warehouses-router";
+export { stockMovementRouter } from "./stock-movements-router";
