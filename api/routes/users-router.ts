@@ -12,7 +12,13 @@ userRouter.get(
   "/",
   requireInternalUser,
   requireRoles("admin"),
-  userController.getAllUsers,
+  userController.listUsers,
+);
+userRouter.get(
+  "/summary",
+  requireInternalUser,
+  requireRoles("admin"),
+  userController.getSummary,
 );
 userRouter.get(
   "/:id",

@@ -1,4 +1,8 @@
-import { updateUserRoleSchema, userInputSchema } from "@radarstock/contracts";
+import {
+  listUsersQuerySchema,
+  updateUserRoleSchema,
+  userInputSchema,
+} from "@radarstock/contracts";
 import { userService } from "../services";
 import type { Request, Response } from "express";
 
@@ -16,8 +20,23 @@ async function registerUser(req: Request, res: Response) {
   res.status(status).json(data);
 }
 
-async function getAllUsers(_req: Request, res: Response) {
-  const { status, data } = await userService.getAllUsers();
+async function listUsers(req: Request, res: Response) {
+  const parsed = listUsersQuerySchema.safeParse(req.query);
+
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Parâmetros de listagem inválidos.",
+    });
+    return;
+  }
+
+  const { page, name } = parsed.data;
+  const { status, data } = await userService.listUsers(page, name);
+  res.status(status).json(data);
+}
+
+async function getSummary(_req: Request, res: Response) {
+  const { status, data } = await userService.getSummary();
   res.status(status).json(data);
 }
 
@@ -118,7 +137,8 @@ async function deleteUserById(req: Request, res: Response) {
 
 export const userController = {
   registerUser,
-  getAllUsers,
+  listUsers,
+  getSummary,
   getUserById,
   updateUserById,
   updateUserRole,
