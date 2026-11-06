@@ -5,3 +5,4 @@ export { productRouter } from "./products-router";
 export { warehouseRouter } from "./warehouses-router";
 export { stockMovementRouter } from "./stock-movements-router";
 export { salesRouter } from "./sales-router";
+export { receiptsRouter } from "./receipts-router";
