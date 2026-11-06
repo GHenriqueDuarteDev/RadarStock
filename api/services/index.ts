@@ -6,3 +6,4 @@ export { warehouseService } from "./warehouses-service";
 export { stockMovementService } from "./stock-movements-service";
 export { saleService } from "./sales-service";
 export { receiptService } from "./receipts-service";
+export { inventoryCountService } from "./inventory-counts-service";
