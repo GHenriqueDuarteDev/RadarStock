@@ -24,6 +24,7 @@ export const config = {
     "/movements/:path*",
     "/sales/:path*",
     "/receipts/:path*",
+    "/inventory/:path*",
     "/team/:path*",
     "/settings/:path*",
   ],
