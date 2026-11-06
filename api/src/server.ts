@@ -34,6 +34,8 @@ app.use("/sales", salesRouter);
 app.use("/receipts", receiptsRouter);
 app.use("/inventory", inventoryCountsRouter);
 app.use("/dashboard", dashboardRouter);
+app.use("/alerts", alertsRouter);
+app.use("/alert-rules", alertRulesRouter);
 app.use("/reports", reportsRouter);
 
 app.listen(port, "0.0.0.0", () => {
