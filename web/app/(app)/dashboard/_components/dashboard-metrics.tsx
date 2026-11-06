@@ -2,21 +2,26 @@ import {
   AlertTriangleIcon,
   BarChart3Icon,
   PackageIcon,
-  ShoppingCartIcon,
+  WarehouseIcon,
 } from "lucide-react";
+import type { DashboardMetrics } from "@radarstock/contracts";
 
 import { MetricCard, MetricCards } from "@/components/metric-cards";
 
-type DashboardMetricsData = {
-  activeProducts: number | null;
-  stockValue: number | null;
-  lowStock: number | null;
-  periodSales: number | null;
+type DashboardMetricsProps = {
+  data?: DashboardMetrics | null;
 };
 
-type DashboardMetricsProps = {
-  data?: DashboardMetricsData | null;
-};
+function formatCurrency(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 export function DashboardMetrics({ data = null }: DashboardMetricsProps) {
   return (
@@ -25,25 +30,21 @@ export function DashboardMetrics({ data = null }: DashboardMetricsProps) {
         label="Produtos ativos"
         value={data?.activeProducts}
         icon={PackageIcon}
-        hint="-- período"
       />
       <MetricCard
         label="Valor em estoque"
-        value={data?.stockValue}
+        value={formatCurrency(data?.stockValue)}
         icon={BarChart3Icon}
-        hint="-- período"
       />
       <MetricCard
         label="Estoque baixo"
         value={data?.lowStock}
         icon={AlertTriangleIcon}
-        hint="-- período"
       />
       <MetricCard
-        label="Vendas no período"
-        value={data?.periodSales}
-        icon={ShoppingCartIcon}
-        hint="-- período"
+        label="Galpões inativos"
+        value={data?.inactiveWarehouses}
+        icon={WarehouseIcon}
       />
     </MetricCards>
   );

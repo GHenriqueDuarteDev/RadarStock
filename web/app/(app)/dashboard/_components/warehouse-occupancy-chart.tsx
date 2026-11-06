@@ -1,5 +1,6 @@
 "use client";
 
+import type { DashboardWarehouseSlice } from "@radarstock/contracts";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 import {
@@ -11,24 +12,33 @@ import {
 } from "@/components/ui/card";
 import { displayValue } from "@/lib/utils";
 
-type WarehouseSlice = {
-  name: string;
-  value: number;
-  color: string;
+type WarehouseOccupancyChartProps = {
+  slices?: DashboardWarehouseSlice[];
+  warehouseCount?: number;
 };
 
-type WarehouseOccupancyChartProps = {
-  data?: WarehouseSlice[];
-};
+const SLICE_COLORS = [
+  "var(--primary)",
+  "var(--success)",
+  "var(--warning)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 
 const EMPTY_SLICE = [{ name: "vazio", value: 1, color: "var(--muted)" }];
 
 export function WarehouseOccupancyChart({
-  data = [],
+  slices = [],
+  warehouseCount = 0,
 }: WarehouseOccupancyChartProps) {
-  const hasData = data.length > 0;
-  const chartData = hasData ? data : EMPTY_SLICE;
-  const warehouseCount = hasData ? data.length : null;
+  const hasData = slices.length > 0;
+  const chartData = hasData
+    ? slices.map((slice, index) => ({
+        name: slice.name,
+        value: slice.valuePercent,
+        color: SLICE_COLORS[index % SLICE_COLORS.length]!,
+      }))
+    : EMPTY_SLICE;
 
   return (
     <Card className="h-full">
@@ -57,7 +67,7 @@ export function WarehouseOccupancyChart({
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span className="font-mono text-2xl font-bold tracking-tight">
-              {displayValue(warehouseCount)}
+              {displayValue(hasData ? warehouseCount : null)}
             </span>
             <span className="text-xs text-muted-foreground">galpões</span>
           </div>
@@ -65,10 +75,10 @@ export function WarehouseOccupancyChart({
 
         <ul className="w-full space-y-2 text-sm">
           {hasData ? (
-            data.map((item) => (
+            chartData.map((item) => (
               <li key={item.name} className="flex items-center gap-2">
                 <span
-                  className="size-2.5 shrink-0 rounded-full"
+                  className="size-2.5 shrink-0 rounded-none"
                   style={{ backgroundColor: item.color }}
                 />
                 <span className="flex-1 truncate">{item.name}</span>
