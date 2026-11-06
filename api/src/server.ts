@@ -2,6 +2,7 @@ import express from "express";
 import {
   authRouter,
   categoryRouter,
+  inventoryCountsRouter,
   productRouter,
   receiptsRouter,
   salesRouter,
@@ -27,6 +28,7 @@ app.use("/warehouses", warehouseRouter);
 app.use("/movements", stockMovementRouter);
 app.use("/sales", salesRouter);
 app.use("/receipts", receiptsRouter);
+app.use("/inventory", inventoryCountsRouter);
 
 app.listen(port, "0.0.0.0", () => {
   console.log("API pronta na porta 3001");
