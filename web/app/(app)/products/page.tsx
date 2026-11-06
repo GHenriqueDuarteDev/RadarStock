@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import {
+  hasPermission,
   listProductsQuerySchema,
   paginatedProductsSchema,
   productsSummarySchema,
@@ -9,7 +10,7 @@ import {
 import { z } from "zod";
 
 import { parseSearchParams, type PageProps } from "@/app/_lib/search-params";
-import { fetchFromApi } from "@/app/_lib/server-api";
+import { fetchFromApi, getCurrentUser } from "@/app/_lib/server-api";
 import { PageHeader } from "@/components/page-header";
 import { SectionErrorBoundary } from "@/components/section-error";
 import {
@@ -50,7 +51,13 @@ async function ProductsMetricsSection() {
   return <ProductsMetrics data={summary} />;
 }
 
-async function ProductsTableSection({ query }: { query: ListProductsQuery }) {
+async function ProductsTableSection({
+  query,
+  canWrite,
+}: {
+  query: ListProductsQuery;
+  canWrite: boolean;
+}) {
   const [products, categories] = await Promise.all([
     fetchFromApi(buildProductsPath(query), paginatedProductsSchema),
     getCategories(),
@@ -63,12 +70,18 @@ async function ProductsTableSection({ query }: { query: ListProductsQuery }) {
       page={products.page}
       pageSize={products.pageSize}
       categories={categories}
+      canWrite={canWrite}
     />
   );
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
-  const query = parseSearchParams(listProductsQuerySchema, await searchParams);
+  const [rawParams, user] = await Promise.all([
+    searchParams,
+    getCurrentUser(),
+  ]);
+  const query = parseSearchParams(listProductsQuerySchema, rawParams);
+  const canWrite = hasPermission(user?.role, "products.write");
 
   return (
     <div className="space-y-4">
@@ -77,16 +90,18 @@ export default async function ProductsPage({ searchParams }: PageProps) {
         title="Produtos"
         description="Gerencie seu catálogo, preços e status dos produtos."
         action={
-          <Suspense
-            fallback={
-              <Button type="button" disabled>
-                <PlusIcon data-icon="inline-start" />
-                Novo produto
-              </Button>
-            }
-          >
-            <NewProductAction />
-          </Suspense>
+          canWrite ? (
+            <Suspense
+              fallback={
+                <Button type="button" disabled>
+                  <PlusIcon data-icon="inline-start" />
+                  Novo produto
+                </Button>
+              }
+            >
+              <NewProductAction />
+            </Suspense>
+          ) : null
         }
       />
       <SectionErrorBoundary title="Indicadores indisponíveis">
@@ -96,7 +111,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       </SectionErrorBoundary>
       <SectionErrorBoundary title="Lista de produtos indisponível">
         <Suspense fallback={<TablePanelSkeleton />}>
-          <ProductsTableSection query={query} />
+          <ProductsTableSection query={query} canWrite={canWrite} />
         </Suspense>
       </SectionErrorBoundary>
     </div>

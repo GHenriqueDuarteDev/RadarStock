@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import {
+  hasPermission,
   inventoryCountsSummarySchema,
   listInventoryCountsQuerySchema,
   paginatedInventoryCountsSchema,
@@ -9,7 +10,7 @@ import { PlusIcon } from "lucide-react";
 
 import { getActiveWarehouses } from "@/app/_lib/lookups";
 import { parseSearchParams, type PageProps } from "@/app/_lib/search-params";
-import { fetchFromApi } from "@/app/_lib/server-api";
+import { fetchFromApi, getCurrentUser } from "@/app/_lib/server-api";
 import { PageHeader } from "@/components/page-header";
 import { SectionErrorBoundary } from "@/components/section-error";
 import {
@@ -45,8 +46,10 @@ async function InventoryMetricsSection() {
 
 async function InventoryTableSection({
   query,
+  canWrite,
 }: {
   query: ListInventoryCountsQuery;
+  canWrite: boolean;
 }) {
   const inventories = await fetchFromApi(
     buildInventoryPath(query),
@@ -59,15 +62,18 @@ async function InventoryTableSection({
       total={inventories.total}
       page={inventories.page}
       pageSize={inventories.pageSize}
+      canWrite={canWrite}
     />
   );
 }
 
 export default async function InventoryPage({ searchParams }: PageProps) {
-  const query = parseSearchParams(
-    listInventoryCountsQuerySchema,
-    await searchParams,
-  );
+  const [rawParams, user] = await Promise.all([
+    searchParams,
+    getCurrentUser(),
+  ]);
+  const query = parseSearchParams(listInventoryCountsQuerySchema, rawParams);
+  const canWrite = hasPermission(user?.role, "inventory.write");
 
   return (
     <div className="space-y-4">
@@ -76,16 +82,18 @@ export default async function InventoryPage({ searchParams }: PageProps) {
         title="Inventário"
         description="Abra a contagem por galpão, registre o físico e confirme para ajustar os saldos."
         action={
-          <Suspense
-            fallback={
-              <Button type="button" disabled>
-                <PlusIcon data-icon="inline-start" />
-                Novo inventário
-              </Button>
-            }
-          >
-            <NewInventoryAction />
-          </Suspense>
+          canWrite ? (
+            <Suspense
+              fallback={
+                <Button type="button" disabled>
+                  <PlusIcon data-icon="inline-start" />
+                  Novo inventário
+                </Button>
+              }
+            >
+              <NewInventoryAction />
+            </Suspense>
+          ) : null
         }
       />
       <SectionErrorBoundary title="Indicadores indisponíveis">
@@ -95,7 +103,7 @@ export default async function InventoryPage({ searchParams }: PageProps) {
       </SectionErrorBoundary>
       <SectionErrorBoundary title="Lista de inventários indisponível">
         <Suspense fallback={<TablePanelSkeleton />}>
-          <InventoryTableSection query={query} />
+          <InventoryTableSection query={query} canWrite={canWrite} />
         </Suspense>
       </SectionErrorBoundary>
     </div>

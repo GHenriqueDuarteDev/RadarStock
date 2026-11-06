@@ -28,6 +28,7 @@ import { EditCategorySheet } from "./edit-category-sheet";
 
 type CategoriesTableProps = {
   data?: PublicCategory[];
+  canWrite?: boolean;
 };
 
 type RowDialog =
@@ -36,7 +37,7 @@ type RowDialog =
   | { type: "delete"; category: PublicCategory }
   | null;
 
-export function CategoriesTable({ data = [] }: CategoriesTableProps) {
+export function CategoriesTable({ data = [], canWrite = true }: CategoriesTableProps) {
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<RowDialog>(null);
 
@@ -82,14 +83,16 @@ export function CategoriesTable({ data = [] }: CategoriesTableProps) {
                 data-testid="categories-search"
               />
             </div>
-            <Button
-              type="button"
-              data-testid="new-category"
-              onClick={() => setDialog({ type: "create" })}
-            >
-              <PlusIcon data-icon="inline-start" />
-              Nova categoria
-            </Button>
+            {canWrite ? (
+              <Button
+                type="button"
+                data-testid="new-category"
+                onClick={() => setDialog({ type: "create" })}
+              >
+                <PlusIcon data-icon="inline-start" />
+                Nova categoria
+              </Button>
+            ) : null}
           </div>
         </div>
       </CardHeader>
@@ -105,16 +108,18 @@ export function CategoriesTable({ data = [] }: CategoriesTableProps) {
                 <th className="px-4 py-2 text-center font-mono text-xs font-semibold tracking-wide uppercase">
                   Descrição
                 </th>
-                <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
-                  <span className="sr-only">Ações</span>
-                </th>
+                {canWrite ? (
+                  <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
+                    <span className="sr-only">Ações</span>
+                  </th>
+                ) : null}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr className="border-t-2 border-border">
                   <td
-                    colSpan={3}
+                    colSpan={canWrite ? 3 : 2}
                     className="px-4 py-6 text-center text-sm text-muted-foreground"
                   >
                     {data.length === 0
@@ -131,36 +136,38 @@ export function CategoriesTable({ data = [] }: CategoriesTableProps) {
                     <td className="px-4 py-3 text-muted-foreground">
                       {displayValue(category.description)}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          data-testid={`category-actions-${category.id}`}
-                          aria-label={`Ações de ${category.name}`}
-                          className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
-                        >
-                          <MoreHorizontalIcon className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-44">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setDialog({ type: "edit", category })
-                            }
-                            data-testid={`category-edit-${category.id}`}
+                    {canWrite ? (
+                      <td className="px-4 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            data-testid={`category-actions-${category.id}`}
+                            aria-label={`Ações de ${category.name}`}
+                            className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
                           >
-                            Alterar dados
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() =>
-                              setDialog({ type: "delete", category })
-                            }
-                            data-testid={`category-delete-${category.id}`}
-                          >
-                            Excluir categoria
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
+                            <MoreHorizontalIcon className="size-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-44">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setDialog({ type: "edit", category })
+                              }
+                              data-testid={`category-edit-${category.id}`}
+                            >
+                              Alterar dados
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() =>
+                                setDialog({ type: "delete", category })
+                              }
+                              data-testid={`category-delete-${category.id}`}
+                            >
+                              Excluir categoria
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    ) : null}
                   </tr>
                 ))
               )}

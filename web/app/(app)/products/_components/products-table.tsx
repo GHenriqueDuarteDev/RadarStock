@@ -28,6 +28,7 @@ type ProductsTableProps = {
   page: number;
   pageSize: number;
   categories: PublicCategory[];
+  canWrite?: boolean;
 };
 
 type RowDialog =
@@ -79,6 +80,7 @@ export function ProductsTable({
   page,
   pageSize,
   categories,
+  canWrite = true,
 }: ProductsTableProps) {
   const [dialog, setDialog] = useState<RowDialog>(null);
 
@@ -113,9 +115,11 @@ export function ProductsTable({
               <th className="px-4 py-2 text-center font-mono text-xs font-semibold tracking-wide uppercase">
                 Status
               </th>
-              <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
-                <span className="sr-only">Ações</span>
-              </th>
+              {canWrite ? (
+                <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
+                  <span className="sr-only">Ações</span>
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -142,17 +146,19 @@ export function ProductsTable({
                 <td className="px-4 py-3">
                   <StatusBadge status={null} />
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Ações do produto"
-                    disabled
-                  >
-                    <MoreHorizontalIcon />
-                  </Button>
-                </td>
+                {canWrite ? (
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Ações do produto"
+                      disabled
+                    >
+                      <MoreHorizontalIcon />
+                    </Button>
+                  </td>
+                ) : null}
               </tr>
             ) : (
               data.map((product) => (
@@ -182,34 +188,36 @@ export function ProductsTable({
                   <td className="px-4 py-3 text-center">
                     <StatusBadge status={product.status} />
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        data-testid={`product-actions-${product.id}`}
-                        aria-label={`Ações de ${product.name}`}
-                        className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
-                      >
-                        <MoreHorizontalIcon className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-44">
-                        <DropdownMenuItem
-                          onClick={() => setDialog({ type: "edit", product })}
-                          data-testid={`product-edit-${product.id}`}
+                  {canWrite ? (
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          data-testid={`product-actions-${product.id}`}
+                          aria-label={`Ações de ${product.name}`}
+                          className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
                         >
-                          Alterar dados
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() =>
-                            setDialog({ type: "delete", product })
-                          }
-                          data-testid={`product-delete-${product.id}`}
-                        >
-                          Desativar produto
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
+                          <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-44">
+                          <DropdownMenuItem
+                            onClick={() => setDialog({ type: "edit", product })}
+                            data-testid={`product-edit-${product.id}`}
+                          >
+                            Alterar dados
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() =>
+                              setDialog({ type: "delete", product })
+                            }
+                            data-testid={`product-delete-${product.id}`}
+                          >
+                            Desativar produto
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  ) : null}
                 </tr>
               ))
             )}

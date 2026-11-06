@@ -24,6 +24,7 @@ type InventoryTableProps = {
   total: number;
   page: number;
   pageSize: number;
+  canWrite?: boolean;
 };
 
 type RowDialog =
@@ -88,6 +89,7 @@ export function InventoryTable({
   total,
   page,
   pageSize,
+  canWrite = true,
 }: InventoryTableProps) {
   const [dialog, setDialog] = useState<RowDialog>(null);
 
@@ -125,9 +127,11 @@ export function InventoryTable({
               <th className="px-4 py-2 text-center font-mono text-xs font-semibold tracking-wide uppercase">
                 Responsável
               </th>
-              <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
-                <span className="sr-only">Ações</span>
-              </th>
+              {canWrite ? (
+                <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
+                  <span className="sr-only">Ações</span>
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -154,17 +158,19 @@ export function InventoryTable({
                 <td className="px-4 py-3 text-center">
                   {displayValue(null)}
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Ações do inventário"
-                    disabled
-                  >
-                    <MoreHorizontalIcon />
-                  </Button>
-                </td>
+                {canWrite ? (
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Ações do inventário"
+                      disabled
+                    >
+                      <MoreHorizontalIcon />
+                    </Button>
+                  </td>
+                ) : null}
               </tr>
             ) : (
               data.map((inventory) => (
@@ -190,45 +196,47 @@ export function InventoryTable({
                   <td className="px-4 py-3 text-center">
                     {displayValue(inventory.createdByName)}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        data-testid={`inventory-actions-${inventory.id}`}
-                        aria-label={`Ações de ${inventory.code}`}
-                        className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
-                      >
-                        <MoreHorizontalIcon className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-44">
-                        <DropdownMenuItem
-                          disabled={inventory.status !== "draft"}
-                          onClick={() => setDialog({ type: "edit", inventory })}
-                          data-testid={`inventory-edit-${inventory.id}`}
+                  {canWrite ? (
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          data-testid={`inventory-actions-${inventory.id}`}
+                          aria-label={`Ações de ${inventory.code}`}
+                          className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
                         >
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={inventory.status !== "draft"}
-                          onClick={() =>
-                            setDialog({ type: "confirm", inventory })
-                          }
-                          data-testid={`inventory-confirm-${inventory.id}`}
-                        >
-                          Confirmar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          disabled={inventory.status === "cancelled"}
-                          onClick={() =>
-                            setDialog({ type: "cancel", inventory })
-                          }
-                          data-testid={`inventory-cancel-${inventory.id}`}
-                        >
-                          Cancelar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
+                          <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-44">
+                          <DropdownMenuItem
+                            disabled={inventory.status !== "draft"}
+                            onClick={() => setDialog({ type: "edit", inventory })}
+                            data-testid={`inventory-edit-${inventory.id}`}
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={inventory.status !== "draft"}
+                            onClick={() =>
+                              setDialog({ type: "confirm", inventory })
+                            }
+                            data-testid={`inventory-confirm-${inventory.id}`}
+                          >
+                            Confirmar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={inventory.status === "cancelled"}
+                            onClick={() =>
+                              setDialog({ type: "cancel", inventory })
+                            }
+                            data-testid={`inventory-cancel-${inventory.id}`}
+                          >
+                            Cancelar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  ) : null}
                 </tr>
               ))
             )}

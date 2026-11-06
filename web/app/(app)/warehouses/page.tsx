@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import {
+  hasPermission,
   listWarehousesQuerySchema,
   paginatedWarehousesSchema,
   warehousesSummarySchema,
@@ -8,7 +9,7 @@ import {
 import { PlusIcon } from "lucide-react";
 
 import { parseSearchParams, type PageProps } from "@/app/_lib/search-params";
-import { fetchFromApi } from "@/app/_lib/server-api";
+import { fetchFromApi, getCurrentUser } from "@/app/_lib/server-api";
 import { PageHeader } from "@/components/page-header";
 import { SectionErrorBoundary } from "@/components/section-error";
 import {
@@ -39,8 +40,10 @@ async function WarehousesMetricsSection() {
 
 async function WarehousesTableSection({
   query,
+  canWrite,
 }: {
   query: ListWarehousesQuery;
+  canWrite: boolean;
 }) {
   const warehouses = await fetchFromApi(
     buildWarehousesPath(query),
@@ -53,15 +56,18 @@ async function WarehousesTableSection({
       total={warehouses.total}
       page={warehouses.page}
       pageSize={warehouses.pageSize}
+      canWrite={canWrite}
     />
   );
 }
 
 export default async function WarehousesPage({ searchParams }: PageProps) {
-  const query = parseSearchParams(
-    listWarehousesQuerySchema,
-    await searchParams,
-  );
+  const [rawParams, user] = await Promise.all([
+    searchParams,
+    getCurrentUser(),
+  ]);
+  const query = parseSearchParams(listWarehousesQuerySchema, rawParams);
+  const canWrite = hasPermission(user?.role, "warehouses.write");
 
   return (
     <div className="space-y-4">
@@ -70,16 +76,18 @@ export default async function WarehousesPage({ searchParams }: PageProps) {
         title="Galpões"
         description="Gerencie locais de armazenagem, códigos e capacidade."
         action={
-          <Suspense
-            fallback={
-              <Button type="button" disabled>
-                <PlusIcon data-icon="inline-start" />
-                Novo galpão
-              </Button>
-            }
-          >
-            <NewWarehouseButton />
-          </Suspense>
+          canWrite ? (
+            <Suspense
+              fallback={
+                <Button type="button" disabled>
+                  <PlusIcon data-icon="inline-start" />
+                  Novo galpão
+                </Button>
+              }
+            >
+              <NewWarehouseButton />
+            </Suspense>
+          ) : null
         }
       />
       <SectionErrorBoundary title="Indicadores indisponíveis">
@@ -89,7 +97,7 @@ export default async function WarehousesPage({ searchParams }: PageProps) {
       </SectionErrorBoundary>
       <SectionErrorBoundary title="Lista de galpões indisponível">
         <Suspense fallback={<TablePanelSkeleton />}>
-          <WarehousesTableSection query={query} />
+          <WarehousesTableSection query={query} canWrite={canWrite} />
         </Suspense>
       </SectionErrorBoundary>
     </div>

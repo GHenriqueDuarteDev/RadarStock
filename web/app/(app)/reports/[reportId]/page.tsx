@@ -2,13 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  hasPermission,
   reportIdSchema,
   reportPreviewSchema,
 } from "@radarstock/contracts";
 import { ArrowLeftIcon } from "lucide-react";
 
 import { type PageProps } from "@/app/_lib/search-params";
-import { ApiRequestError, fetchFromApi } from "@/app/_lib/server-api";
+import {
+  ApiRequestError,
+  fetchFromApi,
+  getCurrentUser,
+} from "@/app/_lib/server-api";
 import { PageHeader } from "@/components/page-header";
 import { SectionErrorBoundary } from "@/components/section-error";
 import {
@@ -66,9 +71,10 @@ export default async function ReportPage({
     notFound();
   }
 
-  const raw = await searchParams;
+  const [raw, user] = await Promise.all([searchParams, getCurrentUser()]);
   const filters = resolveReportFilters(parsedId.data, raw);
   const query = buildReportQueryString(parsedId.data, filters);
+  const canExport = hasPermission(user?.role, "reports.export");
 
   return (
     <div className="space-y-4">
@@ -92,7 +98,11 @@ export default async function ReportPage({
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <ReportFiltersForm reportId={parsedId.data} filters={filters} />
+          <ReportFiltersForm
+            reportId={parsedId.data}
+            filters={filters}
+            canExport={canExport}
+          />
         </CardContent>
       </Card>
 
