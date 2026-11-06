@@ -18,6 +18,7 @@ import { ReportExportButtons } from "./report-export-buttons";
 type ReportFiltersFormProps = {
   reportId: ReportId;
   filters: ReportFilters;
+  canExport?: boolean;
 };
 
 function selectClassName() {
@@ -29,6 +30,7 @@ function selectClassName() {
 export function ReportFiltersForm({
   reportId,
   filters,
+  canExport = true,
 }: ReportFiltersFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -172,7 +174,9 @@ export function ReportFiltersForm({
         ) : null}
       </div>
 
-      <ReportExportButtons reportId={reportId} query={query} />
+      {canExport ? (
+        <ReportExportButtons reportId={reportId} query={query} />
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import {
+  hasPermission,
   listReceiptsQuerySchema,
   paginatedReceiptsSchema,
   receiptsSummarySchema,
@@ -9,7 +10,7 @@ import { PlusIcon } from "lucide-react";
 
 import { getActiveProducts, getActiveWarehouses } from "@/app/_lib/lookups";
 import { parseSearchParams, type PageProps } from "@/app/_lib/search-params";
-import { fetchFromApi } from "@/app/_lib/server-api";
+import { fetchFromApi, getCurrentUser } from "@/app/_lib/server-api";
 import { PageHeader } from "@/components/page-header";
 import { SectionErrorBoundary } from "@/components/section-error";
 import {
@@ -46,7 +47,13 @@ async function ReceiptsMetricsSection() {
   return <ReceiptsMetrics data={summary} />;
 }
 
-async function ReceiptsTableSection({ query }: { query: ListReceiptsQuery }) {
+async function ReceiptsTableSection({
+  query,
+  canWrite,
+}: {
+  query: ListReceiptsQuery;
+  canWrite: boolean;
+}) {
   const receipts = await fetchFromApi(
     buildReceiptsPath(query),
     paginatedReceiptsSchema,
@@ -58,12 +65,18 @@ async function ReceiptsTableSection({ query }: { query: ListReceiptsQuery }) {
       total={receipts.total}
       page={receipts.page}
       pageSize={receipts.pageSize}
+      canWrite={canWrite}
     />
   );
 }
 
 export default async function ReceiptsPage({ searchParams }: PageProps) {
-  const query = parseSearchParams(listReceiptsQuerySchema, await searchParams);
+  const [rawParams, user] = await Promise.all([
+    searchParams,
+    getCurrentUser(),
+  ]);
+  const query = parseSearchParams(listReceiptsQuerySchema, rawParams);
+  const canWrite = hasPermission(user?.role, "receipts.write");
 
   return (
     <div className="space-y-4">
@@ -72,16 +85,18 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
         title="Recebimentos"
         description="Registre entradas de mercadoria com aumento automático de estoque."
         action={
-          <Suspense
-            fallback={
-              <Button type="button" disabled>
-                <PlusIcon data-icon="inline-start" />
-                Novo recebimento
-              </Button>
-            }
-          >
-            <NewReceiptAction />
-          </Suspense>
+          canWrite ? (
+            <Suspense
+              fallback={
+                <Button type="button" disabled>
+                  <PlusIcon data-icon="inline-start" />
+                  Novo recebimento
+                </Button>
+              }
+            >
+              <NewReceiptAction />
+            </Suspense>
+          ) : null
         }
       />
       <SectionErrorBoundary title="Indicadores indisponíveis">
@@ -91,7 +106,7 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
       </SectionErrorBoundary>
       <SectionErrorBoundary title="Lista de recebimentos indisponível">
         <Suspense fallback={<TablePanelSkeleton />}>
-          <ReceiptsTableSection query={query} />
+          <ReceiptsTableSection query={query} canWrite={canWrite} />
         </Suspense>
       </SectionErrorBoundary>
     </div>

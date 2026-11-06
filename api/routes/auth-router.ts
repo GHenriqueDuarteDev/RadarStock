@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authController } from "../controller/auth-controller";
 import {
   requireInternalUser,
-  requireRoles,
+  requirePermission,
 } from "../middlewares/auth-middleware";
 
 const authRouter = Router();
@@ -10,7 +10,7 @@ const authRouter = Router();
 authRouter.post(
   "/register",
   requireInternalUser,
-  requireRoles("admin"),
+  requirePermission("team.manage"),
   authController.adminRegister,
 );
 authRouter.post("/login", authController.login);

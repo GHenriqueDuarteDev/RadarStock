@@ -1,3 +1,8 @@
+import {
+  hasPermission,
+  rolesWithPermission,
+  type Permission,
+} from "@radarstock/contracts";
 import { UserRole } from "../generated/prisma/enums";
 import { prisma } from "./../src/db";
 import type { NextFunction, Request, Response } from "express";
@@ -55,3 +60,10 @@ export function requireRoles(...allowedRoles: UserRole[]) {
     next();
   };
 }
+
+export function requirePermission(permission: Permission) {
+  const roles = rolesWithPermission(permission) as UserRole[];
+  return requireRoles(...roles);
+}
+
+export { hasPermission };

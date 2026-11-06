@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import {
   alertRulesListSchema,
+  hasPermission,
   publicCategorySchema,
 } from "@radarstock/contracts";
 import { z } from "zod";
@@ -38,8 +39,17 @@ function AlertRulesSkeleton() {
 }
 
 async function CategoriesSection() {
-  const categories = await fetchFromApi("/categories", categoriesListSchema);
-  return <CategoriesTable data={categories} />;
+  const [categories, currentUser] = await Promise.all([
+    fetchFromApi("/categories", categoriesListSchema),
+    getCurrentUser(),
+  ]);
+
+  return (
+    <CategoriesTable
+      data={categories}
+      canWrite={hasPermission(currentUser?.role, "categories.write")}
+    />
+  );
 }
 
 async function AlertRulesSection() {
@@ -51,7 +61,7 @@ async function AlertRulesSection() {
   return (
     <AlertRulesPanel
       rules={rules.items}
-      canEdit={currentUser?.role === "admin"}
+      canEdit={hasPermission(currentUser?.role, "alertRules.write")}
     />
   );
 }

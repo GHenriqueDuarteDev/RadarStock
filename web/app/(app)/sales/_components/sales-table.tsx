@@ -22,6 +22,7 @@ type SalesTableProps = {
   total: number;
   page: number;
   pageSize: number;
+  canWrite?: boolean;
 };
 
 const statusLabel: Record<DocumentStatus, string> = {
@@ -78,6 +79,7 @@ export function SalesTable({
   total,
   page,
   pageSize,
+  canWrite = true,
 }: SalesTableProps) {
   const [cancelSale, setCancelSale] = useState<PublicSale | null>(null);
 
@@ -115,9 +117,11 @@ export function SalesTable({
               <th className="px-4 py-2 text-center font-mono text-xs font-semibold tracking-wide uppercase">
                 Responsável
               </th>
-              <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
-                <span className="sr-only">Ações</span>
-              </th>
+              {canWrite ? (
+                <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
+                  <span className="sr-only">Ações</span>
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -144,17 +148,19 @@ export function SalesTable({
                 <td className="px-4 py-3 text-center">
                   {displayValue(null)}
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Ações da venda"
-                    disabled
-                  >
-                    <MoreHorizontalIcon />
-                  </Button>
-                </td>
+                {canWrite ? (
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Ações da venda"
+                      disabled
+                    >
+                      <MoreHorizontalIcon />
+                    </Button>
+                  </td>
+                ) : null}
               </tr>
             ) : (
               data.map((sale) => (
@@ -180,27 +186,29 @@ export function SalesTable({
                   <td className="px-4 py-3 text-center">
                     {displayValue(sale.createdByName)}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        data-testid={`sale-actions-${sale.id}`}
-                        aria-label={`Ações de ${sale.code}`}
-                        className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
-                      >
-                        <MoreHorizontalIcon className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-44">
-                        <DropdownMenuItem
-                          variant="destructive"
-                          disabled={sale.status !== "confirmed"}
-                          onClick={() => setCancelSale(sale)}
-                          data-testid={`sale-cancel-${sale.id}`}
+                  {canWrite ? (
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          data-testid={`sale-actions-${sale.id}`}
+                          aria-label={`Ações de ${sale.code}`}
+                          className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
                         >
-                          Cancelar venda
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
+                          <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-44">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={sale.status !== "confirmed"}
+                            onClick={() => setCancelSale(sale)}
+                            data-testid={`sale-cancel-${sale.id}`}
+                          >
+                            Cancelar venda
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  ) : null}
                 </tr>
               ))
             )}

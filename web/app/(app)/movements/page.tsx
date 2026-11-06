@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import {
+  hasPermission,
   listStockMovementsQuerySchema,
   paginatedStockMovementsSchema,
   stockMovementsSummarySchema,
@@ -9,7 +10,7 @@ import { PlusIcon } from "lucide-react";
 
 import { getActiveProducts, getActiveWarehouses } from "@/app/_lib/lookups";
 import { parseSearchParams, type PageProps } from "@/app/_lib/search-params";
-import { fetchFromApi } from "@/app/_lib/server-api";
+import { fetchFromApi, getCurrentUser } from "@/app/_lib/server-api";
 import { PageHeader } from "@/components/page-header";
 import { SectionErrorBoundary } from "@/components/section-error";
 import {
@@ -67,10 +68,12 @@ async function MovementsTableSection({
 }
 
 export default async function MovementsPage({ searchParams }: PageProps) {
-  const query = parseSearchParams(
-    listStockMovementsQuerySchema,
-    await searchParams,
-  );
+  const [rawParams, user] = await Promise.all([
+    searchParams,
+    getCurrentUser(),
+  ]);
+  const query = parseSearchParams(listStockMovementsQuerySchema, rawParams);
+  const canWrite = hasPermission(user?.role, "movements.write");
 
   return (
     <div className="space-y-4">
@@ -79,16 +82,18 @@ export default async function MovementsPage({ searchParams }: PageProps) {
         title="Movimentações"
         description="Registre entradas, saídas, transferências e ajustes de estoque."
         action={
-          <Suspense
-            fallback={
-              <Button type="button" disabled>
-                <PlusIcon data-icon="inline-start" />
-                Nova movimentação
-              </Button>
-            }
-          >
-            <NewMovementAction />
-          </Suspense>
+          canWrite ? (
+            <Suspense
+              fallback={
+                <Button type="button" disabled>
+                  <PlusIcon data-icon="inline-start" />
+                  Nova movimentação
+                </Button>
+              }
+            >
+              <NewMovementAction />
+            </Suspense>
+          ) : null
         }
       />
       <SectionErrorBoundary title="Indicadores indisponíveis">

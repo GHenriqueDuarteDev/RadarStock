@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { productController } from "../controller/products-controller";
-import { requireInternalUser } from "../middlewares/auth-middleware";
+import {
+  requireInternalUser,
+  requirePermission,
+} from "../middlewares/auth-middleware";
 
 const productRouter = Router();
 
@@ -15,15 +18,22 @@ productRouter.get(
   requireInternalUser,
   productController.getProductById,
 );
-productRouter.post("/", requireInternalUser, productController.createProduct);
+productRouter.post(
+  "/",
+  requireInternalUser,
+  requirePermission("products.write"),
+  productController.createProduct,
+);
 productRouter.patch(
   "/:id",
   requireInternalUser,
+  requirePermission("products.write"),
   productController.updateProductById,
 );
 productRouter.delete(
   "/:id",
   requireInternalUser,
+  requirePermission("products.write"),
   productController.deleteProductById,
 );
 

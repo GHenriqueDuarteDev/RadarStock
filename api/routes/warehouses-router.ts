@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { warehouseController } from "../controller/warehouses-controller";
-import { requireInternalUser } from "../middlewares/auth-middleware";
+import {
+  requireInternalUser,
+  requirePermission,
+} from "../middlewares/auth-middleware";
 
 const warehouseRouter = Router();
 
@@ -27,16 +30,19 @@ warehouseRouter.get(
 warehouseRouter.post(
   "/",
   requireInternalUser,
+  requirePermission("warehouses.write"),
   warehouseController.createWarehouse,
 );
 warehouseRouter.patch(
   "/:id",
   requireInternalUser,
+  requirePermission("warehouses.write"),
   warehouseController.updateWarehouseById,
 );
 warehouseRouter.delete(
   "/:id",
   requireInternalUser,
+  requirePermission("warehouses.write"),
   warehouseController.deleteWarehouseById,
 );
 

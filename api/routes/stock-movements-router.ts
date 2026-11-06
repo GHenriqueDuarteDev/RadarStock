@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { stockMovementController } from "../controller/stock-movements-controller";
-import { requireInternalUser } from "../middlewares/auth-middleware";
+import {
+  requireInternalUser,
+  requirePermission,
+} from "../middlewares/auth-middleware";
 
 const stockMovementRouter = Router();
 
@@ -22,6 +25,7 @@ stockMovementRouter.get(
 stockMovementRouter.post(
   "/",
   requireInternalUser,
+  requirePermission("movements.write"),
   stockMovementController.createMovement,
 );
 

@@ -23,6 +23,7 @@ type WarehousesTableProps = {
   total: number;
   page: number;
   pageSize: number;
+  canWrite?: boolean;
 };
 
 type RowDialog =
@@ -63,6 +64,7 @@ export function WarehousesTable({
   total,
   page,
   pageSize,
+  canWrite = true,
 }: WarehousesTableProps) {
   const [dialog, setDialog] = useState<RowDialog>(null);
 
@@ -91,9 +93,11 @@ export function WarehousesTable({
               <th className="px-4 py-2 text-center font-mono text-xs font-semibold tracking-wide uppercase">
                 Status
               </th>
-              <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
-                <span className="sr-only">Ações</span>
-              </th>
+              {canWrite ? (
+                <th className="px-4 py-2 text-center text-xs font-semibold tracking-wide uppercase">
+                  <span className="sr-only">Ações</span>
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -114,17 +118,19 @@ export function WarehousesTable({
                 <td className="px-4 py-3">
                   <StatusBadge status={null} />
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Ações do galpão"
-                    disabled
-                  >
-                    <MoreHorizontalIcon />
-                  </Button>
-                </td>
+                {canWrite ? (
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Ações do galpão"
+                      disabled
+                    >
+                      <MoreHorizontalIcon />
+                    </Button>
+                  </td>
+                ) : null}
               </tr>
             ) : (
               data.map((warehouse) => (
@@ -148,36 +154,38 @@ export function WarehousesTable({
                   <td className="px-4 py-3 text-center">
                     <StatusBadge status={warehouse.status} />
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        data-testid={`warehouse-actions-${warehouse.id}`}
-                        aria-label={`Ações de ${warehouse.name}`}
-                        className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
-                      >
-                        <MoreHorizontalIcon className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-44">
-                        <DropdownMenuItem
-                          onClick={() =>
-                            setDialog({ type: "edit", warehouse })
-                          }
-                          data-testid={`warehouse-edit-${warehouse.id}`}
+                  {canWrite ? (
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          data-testid={`warehouse-actions-${warehouse.id}`}
+                          aria-label={`Ações de ${warehouse.name}`}
+                          className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
                         >
-                          Alterar dados
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() =>
-                            setDialog({ type: "delete", warehouse })
-                          }
-                          data-testid={`warehouse-delete-${warehouse.id}`}
-                        >
-                          Desativar galpão
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
+                          <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-44">
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setDialog({ type: "edit", warehouse })
+                            }
+                            data-testid={`warehouse-edit-${warehouse.id}`}
+                          >
+                            Alterar dados
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() =>
+                              setDialog({ type: "delete", warehouse })
+                            }
+                            data-testid={`warehouse-delete-${warehouse.id}`}
+                          >
+                            Desativar galpão
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  ) : null}
                 </tr>
               ))
             )}

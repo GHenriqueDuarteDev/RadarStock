@@ -39,7 +39,7 @@ describe("AppHeader quick actions", () => {
     );
   });
 
-  it("lists create links and hides team action for non-admin users", async () => {
+  it("shows ops actions for operator and hides master-data/team", async () => {
     const user = userEvent.setup();
 
     render(
@@ -56,15 +56,35 @@ describe("AppHeader quick actions", () => {
     const menu = await screen.findByTestId("quick-actions-menu");
 
     expect(
-      await screen.findByRole("menuitem", { name: /novo produto/i }),
-    ).toHaveAttribute("href", "/products?new=1");
+      await screen.findByRole("menuitem", { name: /nova movimentação/i }),
+    ).toHaveAttribute("href", "/movements?new=1");
     expect(
-      screen.getByRole("menuitem", { name: /novo galpão/i }),
-    ).toHaveAttribute("href", "/warehouses?new=1");
+      screen.getByRole("menuitem", { name: /nova venda/i }),
+    ).toHaveAttribute("href", "/sales?new=1");
+    expect(
+      screen.queryByRole("menuitem", { name: /novo produto/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: /novo galpão/i }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("menuitem", { name: /novo membro/i }),
     ).not.toBeInTheDocument();
     expect(menu).toBeInTheDocument();
+  });
+
+  it("hides quick actions entirely for viewer", () => {
+    render(
+      <AppHeader
+        user={{
+          id: "v1",
+          email: "viewer@radarstock.local",
+          role: "viewer",
+        }}
+      />,
+    );
+
+    expect(screen.queryByTestId("quick-actions-trigger")).not.toBeInTheDocument();
   });
 
   it("shows team action for admin users", async () => {

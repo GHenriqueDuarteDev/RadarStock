@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation";
 import {
   alertBadgeSchema,
   alertsListSchema,
+  hasPermission,
   type AlertBadge,
+  type Permission,
   type PublicAlert,
   type PublicUser,
 } from "@radarstock/contracts";
@@ -39,15 +41,35 @@ const pageTitles: Record<string, string> = {
 const quickActions: Array<{
   label: string;
   href: string;
-  adminOnly?: boolean;
+  permission: Permission;
 }> = [
-  { label: "Novo produto", href: "/products?new=1" },
-  { label: "Novo galpão", href: "/warehouses?new=1" },
-  { label: "Nova movimentação", href: "/movements?new=1" },
-  { label: "Nova venda", href: "/sales?new=1" },
-  { label: "Novo recebimento", href: "/receipts?new=1" },
-  { label: "Novo inventário", href: "/inventory?new=1" },
-  { label: "Novo membro", href: "/team?new=1", adminOnly: true },
+  {
+    label: "Novo produto",
+    href: "/products?new=1",
+    permission: "products.write",
+  },
+  {
+    label: "Novo galpão",
+    href: "/warehouses?new=1",
+    permission: "warehouses.write",
+  },
+  {
+    label: "Nova movimentação",
+    href: "/movements?new=1",
+    permission: "movements.write",
+  },
+  { label: "Nova venda", href: "/sales?new=1", permission: "sales.write" },
+  {
+    label: "Novo recebimento",
+    href: "/receipts?new=1",
+    permission: "receipts.write",
+  },
+  {
+    label: "Novo inventário",
+    href: "/inventory?new=1",
+    permission: "inventory.write",
+  },
+  { label: "Novo membro", href: "/team?new=1", permission: "team.manage" },
 ];
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -81,8 +103,8 @@ export function AppHeader({ user = null }: AppHeaderProps) {
 
   const visibleQuickActions = useMemo(
     () =>
-      quickActions.filter(
-        (action) => !action.adminOnly || user?.role === "admin",
+      quickActions.filter((action) =>
+        hasPermission(user?.role, action.permission),
       ),
     [user?.role],
   );
@@ -222,30 +244,32 @@ export function AppHeader({ user = null }: AppHeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                type="button"
-                size="default"
-                data-testid="quick-actions-trigger"
-              />
-            }
-          >
-            <PlusIcon data-icon="inline-start" />
-            Ação rápida
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" data-testid="quick-actions-menu">
-            {visibleQuickActions.map((action) => (
-              <DropdownMenuItem
-                key={action.href}
-                render={<Link href={action.href} />}
-              >
-                {action.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {visibleQuickActions.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  size="default"
+                  data-testid="quick-actions-trigger"
+                />
+              }
+            >
+              <PlusIcon data-icon="inline-start" />
+              Ação rápida
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" data-testid="quick-actions-menu">
+              {visibleQuickActions.map((action) => (
+                <DropdownMenuItem
+                  key={action.href}
+                  render={<Link href={action.href} />}
+                >
+                  {action.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </div>
     </header>
   );
