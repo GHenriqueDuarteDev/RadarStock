@@ -3,6 +3,7 @@ import {
   authRouter,
   categoryRouter,
   productRouter,
+  salesRouter,
   stockMovementRouter,
   userRouter,
   warehouseRouter,
@@ -23,6 +24,7 @@ app.use("/categories", categoryRouter);
 app.use("/products", productRouter);
 app.use("/warehouses", warehouseRouter);
 app.use("/movements", stockMovementRouter);
+app.use("/sales", salesRouter);
 
 app.listen(port, "0.0.0.0", () => {
   console.log("API pronta na porta 3001");
