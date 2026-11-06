@@ -1,20 +1,43 @@
 import { requireApiSession, proxyToApi } from "@/app/_lib/api";
 import {
   adminCreateUserSchema,
+  listUsersQuerySchema,
+  paginatedUsersSchema,
   publicUserRecordSchema,
 } from "@radarstock/contracts";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
-const usersListSchema = z.array(publicUserRecordSchema);
-
-export async function GET() {
+export async function GET(request: Request) {
   const session = await requireApiSession();
   if (session instanceof NextResponse) {
     return session;
   }
 
-  const apiResponse = await proxyToApi("/users", session.userId);
+  const url = new URL(request.url);
+  const parsed = listUsersQuerySchema.safeParse({
+    page: url.searchParams.get("page") ?? undefined,
+    name: url.searchParams.get("name") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { message: "Parâmetros de listagem inválidos." },
+      { status: 400 },
+    );
+  }
+
+  const query = new URLSearchParams({
+    page: String(parsed.data.page),
+  });
+
+  if (parsed.data.name) {
+    query.set("name", parsed.data.name);
+  }
+
+  const apiResponse = await proxyToApi(
+    `/users?${query.toString()}`,
+    session.userId,
+  );
 
   const data = await apiResponse.json();
 
@@ -22,7 +45,7 @@ export async function GET() {
     return NextResponse.json(data, { status: apiResponse.status });
   }
 
-  const users = usersListSchema.parse(data);
+  const users = paginatedUsersSchema.parse(data);
   return NextResponse.json(users);
 }
 
