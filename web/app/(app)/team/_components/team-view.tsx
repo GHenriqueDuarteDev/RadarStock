@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  publicUserRecordSchema,
+  PAGE_SIZE,
+  paginatedUsersSchema,
+  usersSummarySchema,
   type PublicUserRecord,
 } from "@radarstock/contracts";
 import { PlusIcon } from "lucide-react";
-import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,23 +19,12 @@ import { EditUserSheet } from "./edit-user-sheet";
 import { TeamMetrics, type TeamMetricsData } from "./team-metrics";
 import { TeamTable } from "./team-table";
 
-const usersListSchema = z.array(publicUserRecordSchema);
-
 type TeamSheet =
   | { type: "create" }
   | { type: "edit"; user: PublicUserRecord }
   | { type: "role"; user: PublicUserRecord }
   | { type: "delete"; user: PublicUserRecord }
   | null;
-
-function computeMetrics(users: PublicUserRecord[]): TeamMetricsData {
-  return {
-    total: users.length,
-    active: users.filter((user) => user.status === "active").length,
-    inactive: users.filter((user) => user.status === "inactive").length,
-    admins: users.filter((user) => user.role === "admin").length,
-  };
-}
 
 async function readErrorMessage(response: Response) {
   try {
@@ -45,22 +35,53 @@ async function readErrorMessage(response: Response) {
   }
 }
 
+function buildUsersQuery(page: number, name: string) {
+  const query = new URLSearchParams({ page: String(page) });
+  const trimmedName = name.trim();
+  if (trimmedName !== "") {
+    query.set("name", trimmedName);
+  }
+  return query.toString();
+}
+
 export function TeamView() {
   const [users, setUsers] = useState<PublicUserRecord[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedName, setAppliedName] = useState("");
+  const [metrics, setMetrics] = useState<TeamMetricsData | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sheet, setSheet] = useState<TeamSheet>(null);
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = useCallback(async (nextPage: number, name: string) => {
     setLoadError(null);
-    const response = await fetch("/api/users");
+    const response = await fetch(
+      `/api/users?${buildUsersQuery(nextPage, name)}`,
+    );
     if (!response.ok) {
       throw new Error(await readErrorMessage(response));
     }
-    const data = usersListSchema.parse(await response.json());
-    setUsers(data);
+    const data = paginatedUsersSchema.parse(await response.json());
+    setUsers(data.items);
+    setTotal(data.total);
+    setPage(data.page);
   }, []);
+
+  const loadSummary = useCallback(async () => {
+    const response = await fetch("/api/users/summary");
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+    const data = usersSummarySchema.parse(await response.json());
+    setMetrics(data);
+  }, []);
+
+  const refreshAfterMutation = useCallback(async () => {
+    await Promise.all([loadUsers(page, appliedName), loadSummary()]);
+  }, [appliedName, loadSummary, loadUsers, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +96,7 @@ export function TeamView() {
             setCurrentUserId(me.id);
           }
         }
-        await loadUsers();
+        await Promise.all([loadUsers(1, ""), loadSummary()]);
       } catch (err) {
         if (!cancelled) {
           setLoadError(
@@ -94,29 +115,47 @@ export function TeamView() {
     return () => {
       cancelled = true;
     };
-  }, [loadUsers]);
+  }, [loadSummary, loadUsers]);
 
-  const metrics = useMemo(() => computeMetrics(users), [users]);
-
-  function handleCreated(created: PublicUserRecord) {
-    setUsers((current) => [...current, created]);
-    setSheet(null);
+  async function handlePageChange(nextPage: number) {
+    try {
+      await loadUsers(nextPage, appliedName);
+    } catch (err) {
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível carregar a equipe.",
+      );
+    }
   }
 
-  function handleSaved(updated: PublicUserRecord) {
-    setUsers((current) =>
-      current.map((user) => (user.id === updated.id ? updated : user)),
-    );
-    setSheet(null);
+  async function handleSearchSubmit() {
+    const nextName = searchInput.trim();
+    setAppliedName(nextName);
+    try {
+      await loadUsers(1, nextName);
+    } catch (err) {
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível carregar a equipe.",
+      );
+    }
   }
 
-  function handleDeleted(id: string) {
-    setUsers((current) =>
-      current.map((user) =>
-        user.id === id ? { ...user, status: "inactive" as const } : user,
-      ),
-    );
+  async function handleCreated(_created: PublicUserRecord) {
     setSheet(null);
+    await refreshAfterMutation();
+  }
+
+  async function handleSaved(_updated: PublicUserRecord) {
+    setSheet(null);
+    await refreshAfterMutation();
+  }
+
+  async function handleDeleted(_id: string) {
+    setSheet(null);
+    await refreshAfterMutation();
   }
 
   return (
@@ -149,7 +188,14 @@ export function TeamView() {
           <TeamMetrics data={metrics} />
           <TeamTable
             data={users}
+            total={total}
+            page={page}
+            pageSize={PAGE_SIZE}
+            searchValue={searchInput}
             currentUserId={currentUserId}
+            onPageChange={handlePageChange}
+            onSearchChange={setSearchInput}
+            onSearchSubmit={handleSearchSubmit}
             onEdit={(user) => setSheet({ type: "edit", user })}
             onChangeRole={(user) => setSheet({ type: "role", user })}
             onDelete={(user) => setSheet({ type: "delete", user })}
