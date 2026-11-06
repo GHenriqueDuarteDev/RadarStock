@@ -3,6 +3,7 @@ import {
   type StockMovementInput,
 } from "@radarstock/contracts";
 import { prisma } from "../src/db";
+import { alertsService } from "./alerts-service";
 
 const movementInclude = {
   product: { select: { name: true, sku: true } },
@@ -298,6 +299,14 @@ async function createMovement(input: StockMovementInput, userId: string) {
         include: movementInclude,
       });
     });
+
+    await alertsService.evaluateProduct(input.productId);
+    if (fromWarehouseId) {
+      await alertsService.evaluateWarehouse(fromWarehouseId);
+    }
+    if (toWarehouseId) {
+      await alertsService.evaluateWarehouse(toWarehouseId);
+    }
 
     return {
       status: 201,

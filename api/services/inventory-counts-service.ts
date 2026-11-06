@@ -4,6 +4,7 @@ import {
   type UpdateInventoryCountInput,
 } from "@radarstock/contracts";
 import { prisma } from "../src/db";
+import { alertsService } from "./alerts-service";
 
 const inventoryInclude = {
   warehouse: { select: { name: true } },
@@ -318,6 +319,8 @@ async function createInventoryCount(
   try {
     const created = await persist(await generateInventoryCode());
 
+    await alertsService.evaluateInventory(created.id);
+
     return {
       status: 201,
       data: toPublicInventoryCount(created as InventoryCountWithRelations),
@@ -329,6 +332,8 @@ async function createInventoryCount(
 
     try {
       const created = await persist(await generateInventoryCode());
+
+      await alertsService.evaluateInventory(created.id);
 
       return {
         status: 201,
@@ -413,6 +418,8 @@ async function updateInventoryCount(
         include: inventoryInclude,
       });
     });
+
+    await alertsService.evaluateInventory(updated.id);
 
     return {
       status: 200,
@@ -500,6 +507,12 @@ async function confirmInventoryCount(id: string, userId: string) {
     return updated;
   });
 
+  await alertsService.evaluateInventory(confirmed.id);
+  for (const item of confirmed.items) {
+    await alertsService.evaluateProduct(item.productId);
+  }
+  await alertsService.evaluateWarehouse(confirmed.warehouseId);
+
   return {
     status: 200,
     data: toPublicInventoryCount(confirmed as InventoryCountWithRelations),
@@ -532,6 +545,8 @@ async function cancelInventoryCount(id: string, userId: string) {
       data: { status: "cancelled" },
       include: inventoryInclude,
     });
+
+    await alertsService.evaluateInventory(cancelled.id);
 
     return {
       status: 200,
@@ -583,6 +598,12 @@ async function cancelInventoryCount(id: string, userId: string) {
 
     return updated;
   });
+
+  await alertsService.evaluateInventory(cancelled.id);
+  for (const item of cancelled.items) {
+    await alertsService.evaluateProduct(item.productId);
+  }
+  await alertsService.evaluateWarehouse(cancelled.warehouseId);
 
   return {
     status: 200,
