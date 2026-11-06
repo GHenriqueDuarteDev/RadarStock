@@ -119,7 +119,7 @@ export function RecentMovements({ data = [] }: RecentMovementsProps) {
                     <td className="text-center">
                       <TypeBadge kind={toBadgeKind(movement)} />
                     </td>
-                    <td className="px-4 py-3 text-right font-mono">
+                    <td className="px-4 py-3 text-center font-mono">
                       {formatQuantity(movement)}
                     </td>
                     <td className="px-4 py-3">
