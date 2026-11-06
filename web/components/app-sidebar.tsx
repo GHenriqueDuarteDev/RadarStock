@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import type { PublicUser } from "@radarstock/contracts";
 import {
   ArrowLeftRightIcon,
   BarChart3Icon,
@@ -63,10 +63,8 @@ const items: NavItem[] = [
   { title: "Equipe", href: "/team", icon: UsersIcon },
 ];
 
-type SidebarUser = {
-  id: string;
-  email: string;
-  role: string;
+type AppSidebarProps = {
+  user: PublicUser | null;
 };
 
 function displayNameFromEmail(email: string) {
@@ -87,10 +85,8 @@ function initialsFromEmail(email: string) {
   return name.slice(0, 2).toUpperCase();
 }
 
-export function AppSidebar() {
+export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
-  const [user, setUser] = useState<SidebarUser | null>(null);
-
   const router = useRouter();
 
   async function logout() {
@@ -115,27 +111,6 @@ export function AppSidebar() {
       });
     }
   }
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadUser() {
-      try {
-        const response = await fetch("/api/me");
-        if (!response.ok) return;
-        const data = (await response.json()) as SidebarUser;
-        if (!cancelled) setUser(data);
-      } catch {
-        if (!cancelled) setUser(null);
-      }
-    }
-
-    void loadUser();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const displayName = user ? displayNameFromEmail(user.email) : "Usuário";
   const initials = user ? initialsFromEmail(user.email) : "US";
