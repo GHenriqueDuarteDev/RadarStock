@@ -6,6 +6,7 @@ import {
   hasPermission,
   type Permission,
   type PublicUser,
+  type UserRole,
 } from "@radarstock/contracts";
 import {
   ArrowLeftRightIcon,
@@ -94,6 +95,20 @@ function initialsFromEmail(email: string) {
     return `${parts[0]![0]}${parts[1]![0]}`.toUpperCase();
   }
   return name.slice(0, 2).toUpperCase();
+}
+
+const roleLabel: Record<UserRole, string> = {
+  admin: "Administrador",
+  manager: "Gerente",
+  operator: "Operador",
+  viewer: "Visualizador",
+};
+
+function displayRole(role: string | undefined) {
+  if (!role || !(role in roleLabel)) {
+    return "Usuário";
+  }
+  return roleLabel[role as UserRole];
 }
 
 export function AppSidebar({ user }: AppSidebarProps) {
@@ -194,7 +209,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               {displayName}
             </span>
             <span className="truncate font-mono text-xs text-muted-foreground">
-              Cárgo
+              {displayRole(user?.role)}
             </span>
           </div>
           <DropdownMenu>

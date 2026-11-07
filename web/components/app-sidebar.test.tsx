@@ -70,6 +70,7 @@ describe("AppSidebar RBAC", () => {
       screen.queryByRole("link", { name: /configurações/i }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /visão geral/i })).toBeInTheDocument();
+    expect(screen.getByText("Visualizador")).toBeInTheDocument();
   });
 
   it("shows Configurações but not Equipe for manager", () => {
@@ -88,6 +89,7 @@ describe("AppSidebar RBAC", () => {
       "/settings",
     );
     expect(screen.queryByRole("link", { name: /equipe/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Gerente")).toBeInTheDocument();
   });
 
   it("shows Equipe and Configurações for admin", () => {
@@ -105,5 +107,6 @@ describe("AppSidebar RBAC", () => {
       "href",
       "/settings",
     );
+    expect(screen.getByText("Administrador")).toBeInTheDocument();
   });
 });

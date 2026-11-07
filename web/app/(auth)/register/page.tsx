@@ -12,7 +12,9 @@ export default function RegisterPage() {
     <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle>Registrar</CardTitle>
-        <CardDescription>Preencha os dados se cadastrar.</CardDescription>
+        <CardDescription>
+          Preencha os dados para criar sua conta.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <RegisterForm />

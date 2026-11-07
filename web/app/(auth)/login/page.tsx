@@ -14,7 +14,9 @@ export default function LoginPage() {
     <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle>Entrar</CardTitle>
-        <CardDescription>Card Description</CardDescription>
+        <CardDescription>
+          Acesse o painel RadarStock com seu e-mail e senha.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <LoginForm />
