@@ -1,6 +1,10 @@
 FROM node:22-alpine
 WORKDIR /app
 COPY contracts ./contracts
+WORKDIR /app/contracts
+RUN npm ci
+
+WORKDIR /app
 COPY api/package.json api/package-lock.json ./api/
 WORKDIR /app/api
 RUN npm install
