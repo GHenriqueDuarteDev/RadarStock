@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:16
     env_file: .env
-    volumes: 
+    volumes:
       - dados_do_estoque:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U radar -d radarstock"]
@@ -10,19 +10,39 @@ services:
       timeout: 5s
       retries: 10
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     environment:
       DATABASE_URL: postgres://radar:radar@db:5432/radarstock
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+    volumes:
+      - ./api:/app/api
+      - api_node_modules:/app/api/node_modules
+      - ./contracts:/app/contracts
+      - ./contracts:/app/api/node_modules/@radarstock/contracts
     depends_on:
       db:
         condition: service_healthy
   web:
-    build: ./web
+    build:
+      context: .
+      dockerfile: web/Dockerfile
     environment:
       API_URL: http://api:3001
-    ports: 
+      SESSION_SECRET: ${SESSION_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+      WATCHPACK_POLLING: "true"
+    ports:
       - "3000:3000"
+    volumes:
+      - ./web:/app/web
+      - web_node_modules:/app/web/node_modules
+      - ./contracts:/app/contracts
+      - ./contracts:/app/web/node_modules/@radarstock/contracts
     depends_on:
       - api
-volumes: 
+volumes:
   dados_do_estoque:
+  web_node_modules:
+  api_node_modules:

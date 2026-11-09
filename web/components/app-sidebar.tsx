@@ -1,0 +1,268 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  hasPermission,
+  type Permission,
+  type PublicUser,
+  type UserRole,
+} from "@radarstock/contracts";
+import {
+  ArrowLeftRightIcon,
+  BarChart3Icon,
+  ClipboardListIcon,
+  LayoutDashboardIcon,
+  LogOutIcon,
+  MoreHorizontalIcon,
+  PackageIcon,
+  SettingsIcon,
+  ShoppingCartIcon,
+  TruckIcon,
+  UsersIcon,
+  WarehouseIcon,
+  type LucideIcon,
+} from "lucide-react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { toast } from "@/components/ui/toast";
+import { hasRequiredRole } from "@/app/_lib/route-access";
+
+type NavItem = {
+  title: string;
+  icon: LucideIcon;
+  href?: string;
+  permission?: Permission;
+};
+
+const items: NavItem[] = [
+  { title: "Visão geral", href: "/dashboard", icon: LayoutDashboardIcon },
+  { title: "Produtos", href: "/products", icon: PackageIcon },
+  { title: "Galpões", href: "/warehouses", icon: WarehouseIcon },
+  { title: "Movimentações", href: "/movements", icon: ArrowLeftRightIcon },
+  { title: "Vendas", href: "/sales", icon: ShoppingCartIcon },
+  { title: "Recebimentos", href: "/receipts", icon: TruckIcon },
+  { title: "Inventário", href: "/inventory", icon: ClipboardListIcon },
+  { title: "Relatórios", href: "/reports", icon: BarChart3Icon },
+  { title: "Equipe", href: "/team", icon: UsersIcon, permission: "team.manage" },
+  {
+    title: "Configurações",
+    href: "/settings",
+    icon: SettingsIcon,
+    permission: "settings.read",
+  },
+];
+
+type AppSidebarProps = {
+  user: PublicUser | null;
+};
+
+function displayNameFromEmail(email: string) {
+  const local = email.split("@")[0] ?? email;
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function initialsFromEmail(email: string) {
+  const name = displayNameFromEmail(email);
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0]}${parts[1]![0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+const roleLabel: Record<UserRole, string> = {
+  admin: "Administrador",
+  manager: "Gerente",
+  operator: "Operador",
+  viewer: "Visualizador",
+};
+
+function displayRole(role: string | undefined) {
+  if (!role || !(role in roleLabel)) {
+    return "Usuário";
+  }
+  return roleLabel[role as UserRole];
+}
+
+export function AppSidebar({ user }: AppSidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  async function logout() {
+    try {
+      const response = await fetch("/api/logout", { method: "POST" });
+      if (!response.ok) {
+        toast.add({
+          title: "Não foi possível sair. Tente novamente.",
+          type: "error",
+        });
+        return;
+      }
+      toast.add({
+        title: "Você saiu da aplicação",
+        type: "success",
+      });
+      router.push("/login");
+    } catch {
+      toast.add({
+        title: "Não foi possível sair. Tente novamente.",
+        type: "error",
+      });
+    }
+  }
+
+  const displayName = user ? displayNameFromEmail(user.email) : "Usuário";
+  const initials = user ? initialsFromEmail(user.email) : "US";
+  const email = user?.email ?? "";
+
+  return (
+    <Sidebar>
+      <SidebarHeader className="border-b-2 border-sidebar-border px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+            <PackageIcon className="size-4" />
+          </div>
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span className="font-mono text-sm font-semibold tracking-tight">
+              RadarStock
+            </span>
+            <span className="font-mono text-xs text-muted-foreground tracking-tight">
+              Gestão Inteligente
+            </span>
+          </div>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items
+                .filter((item) => {
+                  if (item.permission) {
+                    return hasPermission(user?.role, item.permission);
+                  }
+                  if (!item.href) {
+                    return true;
+                  }
+                  return hasRequiredRole(item.href, user?.role);
+                })
+                .map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    {item.href ? (
+                      <SidebarMenuButton
+                        size="lg"
+                        render={<Link href={item.href} />}
+                        isActive={pathname === item.href}
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    ) : (
+                      <SidebarMenuButton size="lg">
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t-2 border-sidebar-border">
+        <div className="flex items-center gap-2 px-2 py-1.5">
+          <Avatar size="lg" className="size-8">
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="truncate text-sm font-semibold tracking-tight">
+              {displayName}
+            </span>
+            <span className="truncate font-mono text-xs text-muted-foreground">
+              {displayRole(user?.role)}
+            </span>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Menu do usuário"
+                />
+              }
+            >
+              <MoreHorizontalIcon />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="min-w-56 rounded-lg"
+              side="right"
+              align="end"
+              sideOffset={8}
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="p-0 font-normal">
+                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                    <Avatar size="sm" className="size-8">
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">
+                        {displayName}
+                      </span>
+                      <span className="truncate font-mono text-xs text-muted-foreground">
+                        {email}
+                      </span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              {hasPermission(user?.role, "settings.read") ? (
+                <DropdownMenuItem render={<Link href="/settings" />}>
+                  <SettingsIcon />
+                  Configurações
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem variant="destructive" onClick={logout}>
+                <LogOutIcon />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

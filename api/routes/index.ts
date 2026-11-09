@@ -1,0 +1,13 @@
+export { authRouter } from "./auth-router";
+export { userRouter } from "./users-router";
+export { categoryRouter } from "./categories-router";
+export { productRouter } from "./products-router";
+export { warehouseRouter } from "./warehouses-router";
+export { stockMovementRouter } from "./stock-movements-router";
+export { salesRouter } from "./sales-router";
+export { receiptsRouter } from "./receipts-router";
+export { inventoryCountsRouter } from "./inventory-counts-router";
+export { dashboardRouter } from "./dashboard-router";
+export { alertsRouter } from "./alerts-router";
+export { alertRulesRouter } from "./alert-rules-router";
+export { reportsRouter } from "./reports-router";
