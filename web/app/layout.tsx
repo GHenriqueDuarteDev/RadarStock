@@ -10,9 +10,47 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const siteDescription =
+  "Sistema full-stack de gestão de estoque com RBAC, alertas e relatórios — monorepo Next.js, Express, Prisma e Zod. Showcase de engenharia para portfólio.";
+
 export const metadata: Metadata = {
-  title: "RadarStock",
-  description: "Operação de estoque rápida e focada",
+  metadataBase: new URL("https://radar-stock.vercel.app"),
+  title: {
+    absolute: "RadarStock",
+  },
+  description: siteDescription,
+  applicationName: "RadarStock",
+  authors: [{ name: "Gustavo Henrique" }],
+  creator: "Gustavo Henrique",
+  keywords: [
+    "RadarStock",
+    "gestão de estoque",
+    "inventory",
+    "RBAC",
+    "Next.js",
+    "Express",
+    "Prisma",
+    "TypeScript",
+    "Zod",
+    "monorepo",
+    "portfólio",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: "RadarStock",
+    description: siteDescription,
+    siteName: "RadarStock",
+    locale: "pt_BR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RadarStock",
+    description: siteDescription,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
