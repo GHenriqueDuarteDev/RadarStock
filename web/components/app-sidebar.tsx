@@ -24,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { RadarStockIcon } from "@/components/brand/radarstock-icon";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -147,7 +148,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarHeader className="border-b-2 border-sidebar-border px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            <PackageIcon className="size-4" />
+            <RadarStockIcon
+              className="size-5"
+              knockout="var(--sidebar-primary)"
+            />
           </div>
           <div className="flex min-w-0 flex-col leading-tight">
             <span className="font-mono text-sm font-semibold tracking-tight">

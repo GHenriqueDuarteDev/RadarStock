@@ -19,49 +19,48 @@ export default function OpenGraphImage() {
           fontFamily: "monospace",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 28,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
           <div
             style={{
-              width: 96,
-              height: 96,
-              background: "#2A2A30",
+              width: 108,
+              height: 108,
+              background: "#1F1F24",
               clipPath:
-                "polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%)",
+                "polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              position: "relative",
             }}
           >
             <div
               style={{
-                width: 44,
-                height: 34,
-                border: "5px solid #E07A2F",
-                position: "relative",
-                top: 8,
-                left: -4,
+                width: 58,
+                height: 58,
+                border: "6px solid #F4F0EA",
+                borderRadius: 58,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
-            />
+            >
+              <div
+                style={{
+                  width: 16,
+                  height: 16,
+                  background: "#E07A2F",
+                  borderRadius: 16,
+                }}
+              />
+            </div>
           </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div
               style={{
                 fontSize: 64,
                 fontWeight: 700,
                 letterSpacing: 2,
-                color: "#2A2A30",
+                color: "#1F1F24",
                 textTransform: "uppercase",
               }}
             >
@@ -85,12 +84,12 @@ export default function OpenGraphImage() {
             display: "flex",
             flexDirection: "column",
             gap: 16,
-            borderTop: "4px solid #2A2A30",
+            borderTop: "4px solid #1F1F24",
             paddingTop: 28,
-            maxWidth: 900,
+            maxWidth: 920,
           }}
         >
-          <div style={{ fontSize: 30, color: "#2A2A30", lineHeight: 1.35 }}>
+          <div style={{ fontSize: 30, color: "#1F1F24", lineHeight: 1.35 }}>
             Monorepo full-stack com Next.js, Express, Prisma e Zod — RBAC,
             alertas e relatórios.
           </div>
