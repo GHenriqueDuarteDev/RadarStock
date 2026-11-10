@@ -25,7 +25,7 @@ const demoAccounts = [
 export function DemoNotice() {
   return (
     <aside
-      className="w-full rounded-lg border border-border bg-muted/50 p-4 text-sm text-muted-foreground"
+      className="w-full rounded-lg border border-border bg-background/95 p-4 text-sm text-muted-foreground shadow-sm backdrop-blur"
       aria-label="Aviso de demonstração"
     >
       <p className="font-medium text-foreground">
