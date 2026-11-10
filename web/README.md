@@ -2,6 +2,8 @@
 
 Frontend Next.js (App Router) do RadarStock. Páginas autenticadas leem a API no servidor; o BFF em `app/api` fica só para sessão, alertas no header e exportação de relatórios.
 
+Visão geral do monorepo, demo e CI/CD: [README raiz](../README.md).
+
 ## Padrão de página
 
 Cada rota de listagem segue o mesmo desenho:
