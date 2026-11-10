@@ -1,13 +1,12 @@
 # RadarStock
 
-
 ## Do que se trata esse projeto
 
-O RadarStock nasceu para resolver um problema concreto: dar visibilidade e controle operacional a quem precisa gerenciar estoque, galpões, vendas, recebimentos e inventário sem depender de planilhas frágeis. A aplicação oferece um painel unificado para acompanhar saldos, movimentações, alertas (estoque baixo, galpão perto da capacidade, inventário pendente) e relatórios exportáveis — o tipo de fluxo que um negócio real usaria no dia a dia.
+O RadarStock é um **projeto de portfólio full-stack**: um sistema de gestão de estoque pensado como produto real — painel unificado para galpões, saldos, vendas, recebimentos, inventário, alertas e relatórios exportáveis — e, ao mesmo tempo, como evidência clara de engenharia de software.
 
-Além do valor de produto, o projeto é um showcase full-stack deliberado: monorepo com `web/`, `api/` e `contracts/`, domínio de inventário com regras e transações, RBAC por papel (admin, manager, operator, viewer) e frontend Next.js App Router usado de forma moderna (RSC, Server Actions, Suspense, Parallel Routes). Serve tanto como base para evoluir a um SaaS de estoque quanto como evidência clara, para recrutadores técnicos, de decisões de arquitetura bem fundamentadas.
+O objetivo principal não é fingir um SaaS em produção comercial; é demonstrar domínio das stacks e boas práticas: monorepo tipado (`web/`, `api/`, `contracts/`), domínio com regras e transações, RBAC por papel (admin, manager, operator, viewer), frontend Next.js App Router moderno (RSC, Server Actions, Suspense, Parallel Routes), API Express em camadas, CI em Pull Requests e deploy separado (web na Vercel, API no Render, Postgres no Supabase).
 
-O detalhamento do padrão de páginas e do BFF no frontend está em [web/README.md](web/README.md).
+O detalhamento do padrão de páginas e do BFF no frontend está em [web/README.md](web/README.md). A organização da API está em [api/README.md](api/README.md).
 
 
 ## Principais linguagens e tecnologias utilizadas
@@ -19,6 +18,32 @@ O detalhamento do padrão de páginas e do BFF no frontend está em [web/README.
 - **Zod (`@radarstock/contracts`)**: schemas e matriz de permissões como fonte única entre API e web — validação na borda e RBAC alinhado nos dois lados.
 - **shadcn/ui**: componentes acessíveis e consistentes (sidebar, sheets, dialogs, tabelas) sem reinventar um design system do zero.
 - **Docker Compose**: sobe web, API e Postgres juntos, com ambiente reproduzível para demo e onboarding.
+- **GitHub Actions (CI)**: validação automática em PRs para `main` (testes da API; lint e testes do web), com instalação correta do pacote local `contracts`.
+- **Deploy (CD)**: web na **Vercel**, API no **Render**, banco no **Supabase** — pipeline enxuto, adequado a um showcase de portfólio.
+
+
+## CI/CD
+
+### Integração contínua (CI)
+
+O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda em **Pull Requests para `main`**:
+
+| Job | O que valida |
+| --- | --- |
+| **API - Tests** | `npm ci` em `api/` + deps de `contracts/`, `prisma generate`, testes Vitest |
+| **Web - Lint and Tests** | `npm ci` em `web/` + deps de `contracts/`, ESLint e testes Vitest |
+
+Isso garante que regressões de contrato, lint e regras de negócio sejam detectadas antes do merge na branch de produção do repositório.
+
+### Entrega (CD)
+
+| Parte | Onde |
+| --- | --- |
+| Frontend (`web/`) | [Vercel](https://vercel.com) (Root Directory `web`, monorepo com `contracts`) |
+| Backend (`api/`) | [Render](https://render.com) (Docker / serviço web) |
+| Banco | [Supabase](https://supabase.com) (PostgreSQL; connection pooler para ambientes sem IPv6) |
+
+Fluxo de branches usado no projeto: feature → `dev` → `main` (produção do demo).
 
 
 ## Instruções de instalação e uso
@@ -26,6 +51,7 @@ O detalhamento do padrão de páginas e do BFF no frontend está em [web/README.
 ### Uso
 
 - Com o ambiente no ar, acesse: [http://localhost:3000](http://localhost:3000)
+- Demo em produção (quando deployada): use o botão **Leia-me** na tela de login para credenciais, aviso de cold start (plano gratuito do Render) e contexto de portfólio.
 
 ### Exemplos de uso
 
