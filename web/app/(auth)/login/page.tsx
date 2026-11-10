@@ -12,9 +12,11 @@ import {
 
 export default function LoginPage() {
   return (
-    <div className="flex w-full max-w-md flex-col gap-4">
-      <DemoNotice />
-      <Card className="w-full">
+    <>
+      <div className="fixed top-4 right-4 z-10">
+        <DemoNotice />
+      </div>
+      <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Entrar</CardTitle>
           <CardDescription>
@@ -34,6 +36,6 @@ export default function LoginPage() {
           </Link>
         </CardFooter>
       </Card>
-    </div>
+    </>
   );
 }
